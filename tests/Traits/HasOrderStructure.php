@@ -1,0 +1,172 @@
+<?php
+
+namespace Tests\Traits;
+
+use PlacetoPay\Kount\Constants\ShippingMethods;
+use PlacetoPay\Kount\Constants\ShippingTypes;
+use PlacetoPay\Kount\Constants\TransactionStatuses;
+
+trait HasOrderStructure
+{
+    public function getOrderRequestStructure(array $overrides = []): array
+    {
+        return array_replace_recursive([
+            'ipAddress' => '192.168.1.1',
+            'kountSessionId' => 'SESSION123',
+            'payment' => [
+                'reference' => 'ORDER123',
+                'created_at' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
+                'amount' => [
+                    'subtotal' => 10000,
+                    'total' => 12000,
+                    'currency' => 'USD',
+                    'isDecimal' => true,
+                    'tax' => [
+                        'total' => 2000,
+                        'country' => 'US',
+                        'outOfStateTotal' => 500,
+                    ],
+                ],
+                'items' => [
+                    [
+                        'id' => 'ITEM1',
+                        'desc' => 'Product 1',
+                        'qty' => 1,
+                        'sku' => 'SKU1',
+                        'price' => 5000,
+                        'category' => 'digital',
+                        'isDigital' => true,
+                        'subCategory' => 'software',
+                        'upc' => '123456789012',
+                        'brand' => 'BrandA',
+                        'url' => 'https://example.com/item1',
+                        'imageUrl' => 'https://example.com/item1.jpg',
+                        'attributes' => [
+                            'color' => 'red',
+                            'size' => 'M',
+                            'weight' => '1kg',
+                            'height' => '10cm',
+                            'width' => '5cm',
+                            'depth' => '2cm',
+                        ],
+                        'descriptors' => ['Special edition'],
+                        'isService' => false,
+                    ],
+                ],
+            ],
+            'account' => [
+                'id' => 'ACC123',
+                'type' => 'customer',
+                'creationDateTime' => '2020-01-01T00:00:00.000Z', // must be in RFC3339 format and must not be in the future
+                'username' => 'user1',
+                'accountIsActive' => true,
+            ],
+            'transaction' => [
+                'processor' => 'VISA',
+                'id' => 'PROC123',
+                'status' => TransactionStatuses::PENDING, // One of TransactionStatuses constants
+                'authResult' => 'AUTH',
+                'updated_at' => '2024-06-01T12:05:00.000Z',
+                'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
+                'declineCode' => '00',
+                'processorAuthCode' => 'AUTHCODE123',
+                'processorTransactionId' => 'TXN123',
+                'acquirerReferenceNumber' => 'ARN123',
+            ],
+            'instrument' => [
+                'type' => 'CARD',
+                'card' => [
+                    'bin' => '411111',
+                    'last_4' => '1111',
+                    'card_brand' => 'VISA',
+                ],
+            ],
+            'payer' => [
+                'name' => 'John',
+                'surname' => 'Doe',
+                'preferred' => 'Johnny',
+                'middle' => 'A',
+                'prefix' => 'Mr.',
+                'suffix' => 'Jr.',
+                'email' => 'john.doe@example.com',
+                'mobile' => '+1234567890',
+                'dateOfBirth' => '1990-01-01',
+                'address' => [
+                    'street' => '123 Main St',
+                    'street2' => 'Apt 4',
+                    'city' => 'New York',
+                    'state' => 'NY',
+                    'country' => 'US',
+                    'postalCode' => '10001',
+                ],
+            ],
+            'shipping' => [
+                'name' => 'John',
+                'surname' => 'Doe',
+                'preferred' => 'Johnny',
+                'middle' => 'A',
+                'prefix' => 'Mr.',
+                'suffix' => 'Jr.',
+                'email' => 'john.doe@example.com',
+                'mobile' => '+1234567890',
+                'dateOfBirth' => '1990-01-01',
+                'address' => [
+                    'street' => '123 Main St',
+                    'street2' => 'Apt 4',
+                    'city' => 'New York',
+                    'state' => 'NY',
+                    'country' => 'US',
+                    'postalCode' => '10001',
+                ],
+                'type' => ShippingTypes::LOCAL_DELIVERY,
+                'delivery' => [
+                    'amount' => 1500,
+                    'provider' => 'FedEx',
+                    'trackingNumber' => 'TRACK123',
+                    'method' => ShippingMethods::EXPRESS,
+                ],
+                'store' => [
+                    'id' => 'STORE001',
+                    'name' => 'Main Store',
+                    'address' => [
+                        'street' => '456 Store St',
+                        'city' => 'New York',
+                        'country' => 'US',
+                    ],
+                ],
+                'accessUrl' => 'www.google.com/downloadTesting',
+                'digitalDownloaded' => 'false',
+                'downloadDeviceIp' => '168.161.1.1',
+                'merchantFulfillmentId' => 'testing1233ljh',
+            ],
+            'promotions' => [
+                [
+                    'id' => 'PROMO1',
+                    'description' => '10% off',
+                    'status' => 'active',
+                    'statusReason' => 'seasonal',
+                    'discount' => [
+                        'percentage' => 10,
+                        'amount' => 1000,
+                        'currency' => 'USD',
+                    ],
+                    'credit' => [
+                        'creditType' => 'bonus',
+                        'percentage' => 100,
+                        'currency' => 'USD',
+                    ],
+                ],
+            ],
+            'loyalty' => [
+                'id' => 'LOYALTY1',
+                'description' => 'Loyalty program',
+                'credit' => [
+                    'creditType' => 'GIFT_CARD',
+                    'amount' => 100,
+                    'currency' => 'USD',
+                ],
+            ],
+            'additional' => ['customData1' => 'value1'],
+        ], $overrides);
+    }
+}

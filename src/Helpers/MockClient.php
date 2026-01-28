@@ -35,11 +35,6 @@ class MockClient
         return $this->request;
     }
 
-    public function lastResponse(): array
-    {
-        return $this->lastResponse;
-    }
-
     public function data(): mixed
     {
         return $this->data;
@@ -77,6 +72,9 @@ class MockClient
     public function __invoke(RequestInterface $request, array $options): FulfilledPromise
     {
         $this->request = $request;
+
+        dd($request->getUri(), $options);
+
         parse_str($request->getBody()->getContents(), $data);
         $this->data = $data;
 

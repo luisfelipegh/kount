@@ -4,32 +4,28 @@ namespace PlacetoPay\Kount;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Response;
 use PlacetoPay\Kount\Exceptions\KountServiceException;
-use PlacetoPay\Kount\Messages\InquiryRequest;
-use PlacetoPay\Kount\Messages\InquiryResponse;
-use PlacetoPay\Kount\Messages\Request;
-use PlacetoPay\Kount\Messages\UpdateRequest;
-use PlacetoPay\Kount\Messages\UpdateResponse;
+use PlacetoPay\Kount\Messages\Requests\BaseOrder;
+use PlacetoPay\Kount\Messages\Requests\CreateOrder;
+use PlacetoPay\Kount\Messages\Requests\InquiryOrder;
+use PlacetoPay\Kount\Messages\Responses\ChargebackOrder;
+use PlacetoPay\Kount\Messages\Responses\GetOrder;
+use PlacetoPay\Kount\Messages\Responses\Token;
+use PlacetoPay\Kount\Messages\Responses\UpdateOrder;
 
 class KountService
 {
-    private const DDC_URL = 'https://ssl.kaptcha.com';
-    private const RIS_URL = 'https://risk.kount.net';
-    private const SANDBOX_DDC_URL = 'https://tst.kaptcha.com';
-    private const SANDBOX_RIS_URL = 'https://risk.test.kount.net';
+    private const SANDBOX_TOKEN_URL = 'https://login.kount.com/oauth2/ausdppkujzCPQuIrY357/v1/token';
+    private const TOKEN_URL = 'https://login.kount.com/oauth2/ausdppksgrbyM0abp357/v1/token';
 
-    private const VERSION = '0720';
+    protected string $clientId;
+    protected string $apiKey;
+    protected string $channel;
+    protected bool $sandbox = false;
 
-    protected $merchant;
-    protected $apiKey;
-    protected $website;
-
-    protected $sandbox = false;
-
-    /**
-     * @var Client
-     */
-    protected $client;
+    protected Client $client;
 
     /**
      * @throws KountServiceException
@@ -39,9 +35,8 @@ class KountService
         $this->validateMandatoryData($settings);
 
         $this->apiKey = $settings['apiKey'];
-        $this->merchant = $settings['merchant'];
-        $this->website = $settings['website'];
-
+        $this->clientId = $settings['merchant'];
+        $this->channel = $settings['website'];
         $this->client = $settings['client'] ?? new Client();
 
         if (isset($settings['sandbox'])) {
@@ -59,85 +54,140 @@ class KountService
         }
     }
 
-    public function parseInquiryRequest($session, $request)
-    {
-        if (!($request instanceof InquiryRequest)) {
-            $request = new InquiryRequest($session, $request);
-        }
-
-        $request
-            ->setApiToken($this->apiKey)
-            ->setVersion(self::VERSION)
-            ->setMerchant($this->merchant)
-            ->setWebsite($this->website);
-
-        return $request;
-    }
-
-    public function parseInquiryUpdate($session, $request)
-    {
-        if (!($request instanceof UpdateRequest)) {
-            $request = new UpdateRequest($session, $request);
-        }
-
-        $request
-            ->setApiToken($this->apiKey)
-            ->setVersion(self::VERSION)
-            ->setMerchant($this->merchant)
-            ->setWebsite($this->website);
-
-        return $request;
-    }
-
-    /**
-     * @throws KountServiceException|GuzzleException
-     */
-    public function inquiry(string $session, $request): InquiryResponse
-    {
-        $request = $this->parseInquiryRequest($session, $request);
-
-        return new InquiryResponse($this->makeRequest($request));
-    }
-
-    /**
-     * @throws KountServiceException|GuzzleException
-     */
-    public function update($session, $request): UpdateResponse
-    {
-        $request = $this->parseInquiryUpdate($session, $request);
-
-        return new UpdateResponse($this->makeRequest($request));
-    }
-
     /**
      * @throws GuzzleException
+     * @throws KountServiceException
      */
-    private function makeRequest(Request $request): string
+    public function token(): Token
     {
-        $response = $this->client->post(
-            $this->risUrl(),
-            [
-                'headers' => $request->asRequestHeaders(),
-                'form_params' => $request->asRequestData(),
-            ]
-        );
-        return $response->getBody()->getContents();
+        $response = $this->client->post(self::tokenUrl(), [
+            'headers' => [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/x-www-form-urlencoded',
+                'Authorization' => 'Basic ' . $this->apiKey,
+            ],
+            'query' => [
+                'grant_type' => 'client_credentials',
+                'scope' => 'k1_integration_api',
+            ],
+        ]);
+
+        return new Token($response);
     }
 
-    public function dataCollectorUrl($session, $slug): string
+    /**
+     * @throws KountServiceException|GuzzleException
+     */
+    public function inquiryOrder(string $token, array|InquiryOrder $request): Messages\Responses\InquiryOrder
     {
-        $url = $this->isSandbox() ? self::SANDBOX_DDC_URL : self::DDC_URL;
+        if (!($request instanceof InquiryOrder)) {
+            $request = new InquiryOrder($request);
+        }
 
-        return $url . '/' . $slug . '?m=' . $this->merchant . '&s=' . $session;
+        $request
+            ->setBearerToken($token)
+            ->setSandbox($this->sandbox)
+            ->setChannel($this->channel);
+
+        return new Messages\Responses\InquiryOrder($this->makeRequest($request));
     }
 
-    public function risUrl(): string
+    /**
+     * @throws KountServiceException|GuzzleException
+     */
+    public function createOrder(string $token, array|CreateOrder $request): Messages\Responses\InquiryOrder
     {
-        return $this->isSandbox() ? self::SANDBOX_RIS_URL : self::RIS_URL;
+        if (!($request instanceof CreateOrder)) {
+            $request = new CreateOrder($request);
+        }
+
+        $request
+            ->setBearerToken($token)
+            ->setSandbox($this->sandbox)
+            ->setChannel($this->channel);
+
+        return new Messages\Responses\InquiryOrder($this->makeRequest($request));
     }
 
-    public function isSandbox()
+    /**
+     * @throws KountServiceException|GuzzleException
+     */
+    public function updateOrder(string $token, array|Messages\Requests\UpdateOrder $request): UpdateOrder
     {
-        return $this->sandbox;
+        if (!($request instanceof Messages\Requests\UpdateOrder)) {
+            $request = new Messages\Requests\UpdateOrder($request);
+        }
+
+        $request
+            ->setBearerToken($token)
+            ->setSandbox($this->sandbox)
+            ->setChannel($this->channel);
+
+        return new UpdateOrder($this->makeRequest($request));
+    }
+
+    /**
+     * @throws KountServiceException|GuzzleException
+     */
+    public function notifyChargeback(string $token, array|Messages\Requests\ChargebackOrder $request): ChargebackOrder
+    {
+        if (!($request instanceof Messages\Requests\ChargebackOrder)) {
+            $request = new Messages\Requests\ChargebackOrder($request);
+        }
+
+        $request
+            ->setBearerToken($token)
+            ->setSandbox($this->sandbox)
+            ->setChannel($this->channel);
+
+        return new ChargebackOrder($this->makeRequest($request));
+    }
+
+    /**
+     * @throws KountServiceException|GuzzleException
+     */
+    public function getOrder(string $token, string $orderId): GetOrder
+    {
+        $request = new Messages\Requests\GetOrder([
+            'orderId' => $orderId,
+        ]);
+
+        $request
+            ->setBearerToken($token)
+            ->setSandbox($this->sandbox);
+
+        return new GetOrder($this->makeRequest($request));
+    }
+
+    /**
+     * @throws GuzzleException|KountServiceException
+     */
+    private function makeRequest(BaseOrder $request): Response
+    {
+        try {
+            $options = [
+                'headers' => $request->headers(),
+            ];
+
+            if ($request->body()) {
+                $options['json'] = $request->body();
+            }
+
+            return $this->client->{$request->method()}($request->url(), $options);
+        } catch (RequestException $exception) {
+            if ($response = $exception->getResponse()) {
+                return $response;
+            }
+
+            throw new KountServiceException($exception->getMessage(), $exception->getCode(), $exception);
+        } catch (\Throwable $exception) {
+            dd($exception);
+            throw new KountServiceException($exception->getMessage(), $exception->getCode(), $exception);
+        }
+    }
+
+    public function tokenUrl(): string
+    {
+        return $this->sandbox ? self::SANDBOX_TOKEN_URL : self::TOKEN_URL;
     }
 }
