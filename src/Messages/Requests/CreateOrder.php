@@ -5,7 +5,7 @@ namespace PlacetoPay\Kount\Messages\Requests;
 use PlacetoPay\Kount\Constants\PaymentTypes;
 use PlacetoPay\Kount\Helpers\AmountHelper;
 
-class CreateOrder extends BaseOrder
+class CreateOrder extends Base
 {
     public function body(): array
     {
@@ -14,7 +14,7 @@ class CreateOrder extends BaseOrder
             'channel' => $this->channel,
             'merchantCategoryCode' => $this->data['merchantCategoryCode'] ?? null,
             'deviceSessionId' => $this->data['kountSessionId'] ?? null,
-            'creationDateTime' => $this->data['payment']['created_at'] ?? (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.v\Z'),
+            'creationDateTime' => $this->data['payment']['created_at'] ?? null,
             'items' => [],
         ];
 
@@ -30,7 +30,7 @@ class CreateOrder extends BaseOrder
         $this->setShippingInformation();
         $this->setCustomAttributes();
 
-        return $this->array_filter_recursive($this->requestData);
+        return $this->filterValues($this->requestData);
     }
 
     private function setAccountInformation(): void
@@ -58,10 +58,10 @@ class CreateOrder extends BaseOrder
                 'category' => $item['category'] ?? null,
                 'isDigital' => isset($item['category']) ? $item['category'] == 'digital' : ($item['isDigital'] ?? null),
                 'subCategory' => $item['subCategory'] ?? null,
-                'upc', $item['upc'] ?? null,
-                'brand', $item['brand'] ?? null,
-                'url', $item['url'] ?? null,
-                'imageUrl', $item['imageUrl'] ?? null,
+                'upc' => $item['upc'] ?? null,
+                'brand' => $item['brand'] ?? null,
+                'url' => $item['url'] ?? null,
+                'imageUrl' => $item['imageUrl'] ?? null,
                 'physicalAttributes' => [
                     'color' => $item['attributes']['color'] ?? null,
                     'size' => $item['attributes']['size'] ?? null,
@@ -87,6 +87,7 @@ class CreateOrder extends BaseOrder
             'subtotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['subtotal'] ?? null, $this->getCurrency(), $this->amountIsDecimal()) : null,
             'orderTotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['total'], $this->getCurrency(), $this->amountIsDecimal()) : null,
             'currency' => $this->getCurrency(),
+            'merchantTransactionId' => $this->data['payment']['reference'] ?? null,
         ];
 
         if (isset($this->data['payment']['amount']['tax'])) {

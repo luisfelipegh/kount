@@ -4,7 +4,7 @@ namespace PlacetoPay\Kount\Messages\Requests;
 
 use PlacetoPay\Kount\Helpers\AmountHelper;
 
-class ChargebackOrder extends BaseOrder
+class ChargebackOrder extends Base
 {
     public function method(): string
     {
@@ -43,9 +43,9 @@ class ChargebackOrder extends BaseOrder
             ];
         }
 
-        $this['reversalsUpdates'][] = $reversalUpdate;
+        $this->requestData['reversalsUpdates'][] = $reversalUpdate;
 
-        return $this->array_filter_recursive($this->requestData);
+        return $this->filterValues($this->requestData);
     }
 
     public function url(): string

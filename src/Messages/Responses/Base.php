@@ -4,6 +4,7 @@ namespace PlacetoPay\Kount\Messages\Responses;
 
 use GuzzleHttp\Psr7\Response;
 use PlacetoPay\Kount\Exceptions\KountServiceException;
+use PlacetoPay\Kount\Helpers\ArrayHelper;
 
 class Base
 {
@@ -38,18 +39,7 @@ class Base
 
     public function get(string $key, mixed $default = null): mixed
     {
-        $keys = explode('.', $key);
-        $array = $this->data;
-
-        foreach ($keys as $key) {
-            if (is_array($array) && array_key_exists($key, $array)) {
-                $array = $array[$key];
-            } else {
-                return $default;
-            }
-        }
-
-        return $array;
+        return ArrayHelper::get($this->data, $key, $default);
     }
 
     public function status(): int
@@ -59,7 +49,7 @@ class Base
 
     public function successful(): bool
     {
-        return ($this->status() >= 200 && $this->status() < 300) || empty($this->get('error')) || empty($this->get('errors'));
+        return $this->status() >= 200 && $this->status() < 300 && empty($this->errors());
     }
 
     public function raw(): string
@@ -69,6 +59,6 @@ class Base
 
     public function errors(): ?array
     {
-        return $this->get('error') ?? null;
+        return $this->get('error', $this->get('errors')) ?? null;
     }
 }

@@ -8,9 +8,4 @@ class ChargebackOrder extends Base
     {
         return parent::successful() && empty($this->errors());
     }
-
-    public function errors(): array
-    {
-        return $this->get('errors', []);
-    }
 }

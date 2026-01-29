@@ -7,7 +7,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response;
 use PlacetoPay\Kount\Exceptions\KountServiceException;
-use PlacetoPay\Kount\Messages\Requests\BaseOrder;
+use PlacetoPay\Kount\Messages\Requests\Base;
 use PlacetoPay\Kount\Messages\Requests\CreateOrder;
 use PlacetoPay\Kount\Messages\Requests\InquiryOrder;
 use PlacetoPay\Kount\Messages\Responses\ChargebackOrder;
@@ -17,9 +17,6 @@ use PlacetoPay\Kount\Messages\Responses\UpdateOrder;
 
 class KountService
 {
-    private const SANDBOX_TOKEN_URL = 'https://login.kount.com/oauth2/ausdppkujzCPQuIrY357/v1/token';
-    private const TOKEN_URL = 'https://login.kount.com/oauth2/ausdppksgrbyM0abp357/v1/token';
-
     protected string $clientId;
     protected string $apiKey;
     protected string $channel;
@@ -60,19 +57,13 @@ class KountService
      */
     public function token(): Token
     {
-        $response = $this->client->post(self::tokenUrl(), [
-            'headers' => [
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/x-www-form-urlencoded',
-                'Authorization' => 'Basic ' . $this->apiKey,
-            ],
-            'query' => [
-                'grant_type' => 'client_credentials',
-                'scope' => 'k1_integration_api',
-            ],
-        ]);
-
-        return new Token($response);
+        return new Token(
+            $this->makeRequest(
+                (new Messages\Requests\Token())
+                ->setApiKey($this->apiKey)
+                ->setSandbox($this->sandbox)
+            )
+        );
     }
 
     /**
@@ -162,7 +153,7 @@ class KountService
     /**
      * @throws GuzzleException|KountServiceException
      */
-    private function makeRequest(BaseOrder $request): Response
+    private function makeRequest(Base $request): Response
     {
         try {
             $options = [
@@ -181,13 +172,7 @@ class KountService
 
             throw new KountServiceException($exception->getMessage(), $exception->getCode(), $exception);
         } catch (\Throwable $exception) {
-            dd($exception);
             throw new KountServiceException($exception->getMessage(), $exception->getCode(), $exception);
         }
-    }
-
-    public function tokenUrl(): string
-    {
-        return $this->sandbox ? self::SANDBOX_TOKEN_URL : self::TOKEN_URL;
     }
 }

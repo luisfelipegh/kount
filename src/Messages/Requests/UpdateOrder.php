@@ -4,7 +4,7 @@ namespace PlacetoPay\Kount\Messages\Requests;
 
 use PlacetoPay\Kount\Exceptions\KountServiceException;
 
-class UpdateOrder extends BaseOrder
+class UpdateOrder extends Base
 {
     public function method(): string
     {

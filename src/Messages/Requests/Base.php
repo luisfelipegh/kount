@@ -2,7 +2,7 @@
 
 namespace PlacetoPay\Kount\Messages\Requests;
 
-abstract class BaseOrder
+abstract class Base
 {
     private const SANDBOX_ORDERS_URL = 'https://api-sandbox.kount.com/commerce/v2/orders';
     private const ORDERS_URL = 'https://api.kount.com/commerce/v2/orders';
@@ -13,7 +13,14 @@ abstract class BaseOrder
     protected string $channel = '';
     protected array $requestData = [];
 
-    abstract public function body(): array;
+    public function body(): array
+    {
+        return [];
+    }
+    public function query(): array
+    {
+        return [];
+    }
 
     public function headers(): array
     {
@@ -65,11 +72,11 @@ abstract class BaseOrder
         return $this->sandbox ? self::SANDBOX_ORDERS_URL : self::ORDERS_URL;
     }
 
-    protected function array_filter_recursive(array $array): array
+    protected function filterValues(array $array): array
     {
         foreach ($array as $key => $value) {
             if (is_array($value)) {
-                $array[$key] = $this->array_filter_recursive($value);
+                $array[$key] = $this->filterValues($value);
             }
         }
 
