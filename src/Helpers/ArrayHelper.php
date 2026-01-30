@@ -18,4 +18,19 @@ class ArrayHelper
 
         return $array;
     }
+
+    public static function filterValues(array $array): array
+    {
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $array[$key] = self::filterValues($value);
+            }
+        }
+
+        return array_filter($array, fn ($v) => !(
+            $v === null ||
+            $v === '' ||
+            (is_array($v) && empty($v))
+        ));
+    }
 }

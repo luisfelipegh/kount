@@ -4,6 +4,7 @@ namespace PlacetoPay\Kount\Messages\Requests;
 
 use PlacetoPay\Kount\Constants\PaymentTypes;
 use PlacetoPay\Kount\Helpers\AmountHelper;
+use PlacetoPay\Kount\Helpers\ArrayHelper;
 
 class CreateOrder extends Base
 {
@@ -30,7 +31,7 @@ class CreateOrder extends Base
         $this->setShippingInformation();
         $this->setCustomAttributes();
 
-        return $this->filterValues($this->requestData);
+        return ArrayHelper::filterValues($this->requestData);
     }
 
     private function setAccountInformation(): void
@@ -100,11 +101,11 @@ class CreateOrder extends Base
             }
 
             if (isset($this->data['payment']['amount']['tax']['country'])) {
-                $transaction['tax']['taxAmount'] = $this->data['payment']['amount']['tax']['country'];
+                $transaction['tax']['taxableCountryCode'] = $this->data['payment']['amount']['tax']['country'];
             }
 
             if (isset($this->data['payment']['amount']['tax']['outOfStateTotal'])) {
-                $transaction['tax']['taxAmount'] = AmountHelper::parseAmount($this->data['payment']['amount']['tax']['outOfStateTotal'], $this->getCurrency(), $this->amountIsDecimal());
+                $transaction['tax']['outOfStateTotal'] = AmountHelper::parseAmount($this->data['payment']['amount']['tax']['outOfStateTotal'], $this->getCurrency(), $this->amountIsDecimal());
             }
         }
 
@@ -263,11 +264,14 @@ class CreateOrder extends Base
 
     private function setShippingInformation(): void
     {
-        $fulfillment = [];
-
-        if (isset($this->data['shipping']['type'])) {
-            $fulfillment['type'] = $this->data['shipping']['type'] ?? '';
-        }
+        $fulfillment = [
+            'type' => $this->data['shipping']['type'] ?? '',
+            'status' => $this->data['shipping']['status'] ?? null,
+            'accessUrl' => $this->data['shipping']['accessUrl'] ?? null,
+            'downloadDeviceIp' => $this->data['shipping']['downloadDeviceIp'] ?? null,
+            'merchantFulfillmentId' => $this->data['shipping']['merchantFulfillmentId'] ?? null,
+            'recipientPerson' => $this->getPerson('shipping'),
+        ];
 
         if (isset($this->data['shipping']['delivery'])) {
             $fulfillment['shipping']['amount'] =
@@ -279,16 +283,9 @@ class CreateOrder extends Base
             $fulfillment['shipping']['method'] = $this->data['shipping']['delivery']['method'] ?? null;
         }
 
-        $fulfillment['recipientPerson'] = $this->getPerson('shipping');
-
         if ($this->requestData['items']) {
             $fulfillment['items'] = $this->getResumeOfItems();
         }
-
-        $fulfillment['status'] = $this->data['shipping']['status'] ?? null;
-        $fulfillment['accessUrl'] = $this->data['shipping']['accessUrl'] ?? null;
-        $fulfillment['downloadDeviceIp'] = $this->data['shipping']['downloadDeviceIp'] ?? null;
-        $fulfillment['merchantFulfillmentId'] = $this->data['shipping']['merchantFulfillmentId'] ?? null;
 
         if (isset($this->data['shipping']['digitalDownloaded'])) {
             $fulfillment['digitalDownloaded'] = filter_var($this->data['shipping']['digitalDownloaded'], FILTER_VALIDATE_BOOLEAN);

@@ -71,19 +71,4 @@ abstract class Base
     {
         return $this->sandbox ? self::SANDBOX_ORDERS_URL : self::ORDERS_URL;
     }
-
-    protected function filterValues(array $array): array
-    {
-        foreach ($array as $key => $value) {
-            if (is_array($value)) {
-                $array[$key] = $this->filterValues($value);
-            }
-        }
-
-        return array_filter($array, fn ($v) => !(
-            $v === null ||
-            $v === '' ||
-            (is_array($v) && empty($v))
-        ));
-    }
 }

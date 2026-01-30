@@ -3,6 +3,7 @@
 namespace PlacetoPay\Kount\Messages\Requests;
 
 use PlacetoPay\Kount\Helpers\AmountHelper;
+use PlacetoPay\Kount\Helpers\ArrayHelper;
 
 class ChargebackOrder extends Base
 {
@@ -45,7 +46,7 @@ class ChargebackOrder extends Base
 
         $this->requestData['reversalsUpdates'][] = $reversalUpdate;
 
-        return $this->filterValues($this->requestData);
+        return ArrayHelper::filterValues($this->requestData);
     }
 
     public function url(): string

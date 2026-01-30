@@ -3,6 +3,7 @@
 namespace PlacetoPay\Kount\Messages\Requests;
 
 use PlacetoPay\Kount\Exceptions\KountServiceException;
+use PlacetoPay\Kount\Helpers\ArrayHelper;
 
 class UpdateOrder extends Base
 {
@@ -23,7 +24,7 @@ class UpdateOrder extends Base
             ];
         }
 
-        return $this->requestData;
+        return ArrayHelper::filterValues($this->requestData);
     }
 
     /**

@@ -2,8 +2,6 @@
 
 namespace PlacetoPay\Kount\Messages\Requests;
 
-use PlacetoPay\Kount\Exceptions\KountServiceException;
-
 class GetOrder extends Base
 {
     public function method(): string
@@ -16,15 +14,8 @@ class GetOrder extends Base
         return [];
     }
 
-    /**
-     * @throws KountServiceException
-     */
     public function url(): string
     {
-        if (!isset($this->data['orderId'])) {
-            throw new KountServiceException('The orderId is required to update an order.');
-        }
-
         return parent::url() . '/' . $this->data['orderId'];
     }
 }

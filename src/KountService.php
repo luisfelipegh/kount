@@ -60,8 +60,8 @@ class KountService
         return new Token(
             $this->makeRequest(
                 (new Messages\Requests\Token())
-                ->setApiKey($this->apiKey)
-                ->setSandbox($this->sandbox)
+                    ->setApiKey($this->apiKey)
+                    ->setSandbox($this->sandbox)
             )
         );
     }
@@ -164,13 +164,13 @@ class KountService
                 $options['json'] = $request->body();
             }
 
-            return $this->client->{$request->method()}($request->url(), $options);
-        } catch (RequestException $exception) {
-            if ($response = $exception->getResponse()) {
-                return $response;
+            if ($request->query()) {
+                $options['query'] = $request->query();
             }
 
-            throw new KountServiceException($exception->getMessage(), $exception->getCode(), $exception);
+            return $this->client->{$request->method()}($request->url(), $options);
+        } catch (RequestException $exception) {
+            return $exception->getResponse();
         } catch (\Throwable $exception) {
             throw new KountServiceException($exception->getMessage(), $exception->getCode(), $exception);
         }

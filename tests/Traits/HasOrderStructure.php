@@ -2,12 +2,22 @@
 
 namespace Tests\Traits;
 
+use PlacetoPay\Kount\Constants\DecisionCodes;
 use PlacetoPay\Kount\Constants\ShippingMethods;
 use PlacetoPay\Kount\Constants\ShippingTypes;
 use PlacetoPay\Kount\Constants\TransactionStatuses;
 
 trait HasOrderStructure
 {
+    public static function behavioursProvider(): array
+    {
+        return [
+            DecisionCodes::APPROVE . ' Order' => [DecisionCodes::APPROVE],
+            DecisionCodes::REVIEW . ' Order' => [DecisionCodes::REVIEW],
+            DecisionCodes::DECLINE . ' Order' => [DecisionCodes::DECLINE],
+        ];
+    }
+
     public function getOrderRequestStructure(array $overrides = []): array
     {
         return array_replace_recursive([
@@ -125,19 +135,19 @@ trait HasOrderStructure
                     'trackingNumber' => 'TRACK123',
                     'method' => ShippingMethods::EXPRESS,
                 ],
-                'store' => [
-                    'id' => 'STORE001',
-                    'name' => 'Main Store',
-                    'address' => [
-                        'street' => '456 Store St',
-                        'city' => 'New York',
-                        'country' => 'US',
-                    ],
-                ],
                 'accessUrl' => 'www.google.com/downloadTesting',
                 'digitalDownloaded' => 'false',
                 'downloadDeviceIp' => '168.161.1.1',
                 'merchantFulfillmentId' => 'testing1233ljh',
+            ],
+            'store' => [
+                'id' => 'STORE001',
+                'name' => 'Main Store',
+                'address' => [
+                    'street' => '456 Store St',
+                    'city' => 'New York',
+                    'country' => 'US',
+                ],
             ],
             'promotions' => [
                 [

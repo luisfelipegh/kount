@@ -57,7 +57,7 @@ class Base
         return (string)$this->response->getBody();
     }
 
-    public function errors(): ?array
+    public function errors(): mixed
     {
         return $this->get('error', $this->get('errors')) ?? null;
     }

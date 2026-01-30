@@ -83,7 +83,7 @@ class MockClient
         $uri = $request->getUri()->getPath();
 
         if (str_contains($uri, '/v1/token')) {
-            return $this->handleToken($request);
+            return $this->handleToken();
         }
 
         if (!empty($body = $request->getBody()->getContents())) {
@@ -120,9 +120,9 @@ class MockClient
         };
     }
 
-    public function getData(string $attribute): ?string
+    public function getData(string $attribute): mixed
     {
-        return ArrayHelper::get($this->data, $attribute);
+        return ArrayHelper::get($this->data(), $attribute);
     }
 
     public static function client(): Client
@@ -164,9 +164,9 @@ class MockClient
         };
     }
 
-    private function handleToken(RequestInterface $request): FulfilledPromise
+    private function handleToken(): FulfilledPromise
     {
-        return match ($request->getHeader('Authorization')[0] ?? '') {
+        return match ($this->request()->getHeader('Authorization')[0] ?? '') {
             'Basic ' . self::INVALID_API_KEY => $this->response(200, [
                 'token_type' => 'Bearer',
                 'expires_in' => 1200,
@@ -748,19 +748,13 @@ class MockClient
 
     private function handleReversals(): FulfilledPromise
     {
-        return match (true) {
-            'VALIDATION_ERROR' => $this->response(400, [
-                'correlationId' => strtoupper(uniqid()),
-                'error' => [
-                    'code' => 400,
-                    'message' => 'failed to validate input',
-                ],
-            ]),
-            'NOT_FOUND' => $this->response(404, [
-                'correlationId' => strtoupper(uniqid()),
-                'error' => [
-                    'code' => 404,
-                    'message' => 'unable to retrieve requested resource. resource does not exist',
+        return match ($this->getData('reversalsUpdates')[0]['orderId'] ?? '') {
+            'VALIDATION_ERROR' => $this->response(200, [
+                'errors' => [
+                    [
+                        'orderId' => 'D2WFWRV4DYS9Ms4GK',
+                        'error' => 'failed to find current reversal status for order',
+                    ],
                 ],
             ]),
             'EXCEPTION' => throw new Exception('Testing purposes exception'),
