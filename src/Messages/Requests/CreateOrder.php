@@ -30,6 +30,9 @@ class CreateOrder extends Base
         $this->setLoyalty();
         $this->setShippingInformation();
         $this->setCustomAttributes();
+        $this->setMerchant();
+        $this->setAdvertising();
+        $this->setLinks();
 
         return ArrayHelper::filterValues($this->requestData);
     }
@@ -333,5 +336,54 @@ class CreateOrder extends Base
         foreach ($this->data['additional'] as $key => $value) {
             $this->requestData['customFields'][$key] = $value;
         }
+    }
+
+    private function setLinks(): void
+    {
+        if (!isset($this->data['links'])) {
+            return;
+        }
+
+        $this->requestData['links'] = [
+            'viewOrderUrl' => $this->data['links']['viewOrderUrl'] ?? null,
+            'requestRefundUrl' => $this->data['links']['requestRefundUrl'] ?? null,
+            'buyAgainUrl' => $this->data['links']['buyAgainUrl'] ?? null,
+            'writeReviewUrl' => $this->data['links']['writeReviewUrl'] ?? null,
+        ];
+    }
+
+    private function setAdvertising(): void
+    {
+        if (!isset($this->data['advertising'])) {
+            return;
+        }
+
+        $this->requestData['advertising'] = [
+            'channel' => $this->data['advertising']['channel'] ?? null,
+            'affiliate' => $this->data['advertising']['affiliate'] ?? null,
+            'subAffiliate' => $this->data['advertising']['subAffiliate'] ?? null,
+            'writeReviewUrl' => $this->data['advertising']['writeReviewUrl'] ?? null,
+            'events' => $this->data['advertising']['events'] ?? [],
+            'campaign' => isset($this->data['advertising']['campaign']) ? [
+                'id' => $this->data['advertising']['campaign']['id'] ?? null,
+                'name' => $this->data['advertising']['campaign']['name'] ?? null,
+            ] : null,
+        ];
+    }
+
+    private function setMerchant(): void
+    {
+        if (!isset($this->data['merchant'])) {
+            return;
+        }
+
+        $this->requestData['merchant'] = [
+            'name' => $this->data['merchant']['name'] ?? null,
+            'storeName' => $this->data['merchant']['storeName'] ?? null,
+            'websiteUrl' => $this->data['merchant']['websiteUrl'] ?? null,
+            'id' => $this->data['merchant']['id'] ?? null,
+            'contactEmail' => $this->data['merchant']['contactEmail'] ?? null,
+            'contactPhoneNumber' => $this->data['merchant']['contactPhoneNumber'] ?? null,
+        ];
     }
 }

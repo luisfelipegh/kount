@@ -233,6 +233,40 @@ class CreateOrderTest extends BaseTestCase
                     'customData2' => 'value2',
                 ],
                 'merchantCategoryCode' => 'testingMMC',
+                'merchant' => [
+                    'name' => 'merchantName',
+                    'storeName' => 'storeNameTesting',
+                    'websiteUrl' => 'websiteUrlTesting',
+                    'id' => 'idTesting123',
+                    'contactEmail' => 'contactEmail@testing.com',
+                    'contactPhoneNumber' => '30022211111',
+                ],
+                'links' => [
+                    'viewOrderUrl' => 'testingUrlViewOrderUrl',
+                    'requestRefundUrl' => 'testingUrlRequestRefundUrl',
+                    'buyAgainUrl' => 'testingUrlBuyAgainUrl',
+                    'writeReviewUrl' => 'testingUrlWriteReviewUrl',
+                ],
+                'advertising' => [
+                    'channel' => 'website',
+                    'affiliate' => 'testingAffiliate',
+                    'subAffiliate' => 'testingSubAffiliate',
+                    'writeReviewUrl' => 'testingWritingUrlReview',
+                    'events' => [
+                        [
+                            'type' => 'event1Type',
+                            'value' => 'event1TValue',
+                        ],
+                        [
+                            'type' => 'event2Type',
+                            'value' => 'event2TValue',
+                        ],
+                    ],
+                    'campaign' => [
+                        'id' => 'campaignId',
+                        'name' => 'campaignName',
+                    ],
+                ],
             ],
         );
 
@@ -435,6 +469,40 @@ class CreateOrderTest extends BaseTestCase
                 'customData1' => 'value1',
                 'customData2' => 'value2',
             ],
+            'merchant' => [
+                'name' => 'merchantName',
+                'storeName' => 'storeNameTesting',
+                'websiteUrl' => 'websiteUrlTesting',
+                'id' => 'idTesting123',
+                'contactEmail' => 'contactEmail@testing.com',
+                'contactPhoneNumber' => '30022211111',
+            ],
+            'links' => [
+                'viewOrderUrl' => 'testingUrlViewOrderUrl',
+                'requestRefundUrl' => 'testingUrlRequestRefundUrl',
+                'buyAgainUrl' => 'testingUrlBuyAgainUrl',
+                'writeReviewUrl' => 'testingUrlWriteReviewUrl',
+            ],
+            'advertising' => [
+                'channel' => 'website',
+                'affiliate' => 'testingAffiliate',
+                'subAffiliate' => 'testingSubAffiliate',
+                'writeReviewUrl' => 'testingWritingUrlReview',
+                'events' => [
+                    [
+                        'type' => 'event1Type',
+                        'value' => 'event1TValue',
+                    ],
+                    [
+                        'type' => 'event2Type',
+                        'value' => 'event2TValue',
+                    ],
+                ],
+                'campaign' => [
+                    'id' => 'campaignId',
+                    'name' => 'campaignName',
+                ],
+            ],
         ], $orderRequest->body());
 
         $clean = $this->getOrderRequestStructure();
@@ -443,6 +511,9 @@ class CreateOrderTest extends BaseTestCase
         unset($clean['account']);
         unset($clean['payment']['items']);
         unset($clean['additional']);
+        unset($clean['links']);
+        unset($clean['merchant']);
+        unset($clean['advertising']);
 
         $clean = new CreateOrder($clean);
 
@@ -451,5 +522,8 @@ class CreateOrderTest extends BaseTestCase
         $this->assertArrayNotHasKey('items', $clean->body());
         $this->assertArrayNotHasKey('customFields', $clean->body());
         $this->assertArrayNotHasKey('loyalty', $clean->body());
+        $this->assertArrayNotHasKey('links', $clean->body());
+        $this->assertArrayNotHasKey('merchant', $clean->body());
+        $this->assertArrayNotHasKey('advertising', $clean->body());
     }
 }
