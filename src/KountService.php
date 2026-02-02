@@ -41,6 +41,16 @@ class KountService
         }
     }
 
+    public function getSettings(): array
+    {
+        return [
+            'apiKey' => $this->apiKey,
+            'clientId' => $this->clientId,
+            'channel' => $this->channel,
+            'sandbox' => $this->sandbox,
+        ];
+    }
+
     /**
      * @throws KountServiceException
      */
