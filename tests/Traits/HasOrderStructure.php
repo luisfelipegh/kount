@@ -23,18 +23,33 @@ trait HasOrderStructure
         return array_replace_recursive([
             'ipAddress' => '192.168.1.1',
             'kountSessionId' => 'SESSION123',
+            'createdAt' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
             'payment' => [
                 'reference' => 'ORDER123',
-                'created_at' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
                 'amount' => [
-                    'subtotal' => 10000,
                     'total' => 12000,
                     'currency' => 'USD',
                     'isDecimal' => true,
-                    'tax' => [
-                        'total' => 2000,
-                        'country' => 'US',
-                        'outOfStateTotal' => 500,
+                    'taxCountry' => 'US',
+                    'taxes' => [
+                        [
+                            'kind' => 'outOfStateTotal',
+                            'amount' => 5,
+                        ],
+                        [
+                            'kind' => 'outOfStateTotal',
+                            'amount' => 5,
+                        ],
+                    ],
+                    'details' => [
+                        [
+                            'kind' => 'subtotal',
+                            'amount' => 10000,
+                        ],
+                        [
+                            'kind' => 'shipping',
+                            'amount' => 1500,
+                        ],
                     ],
                 ],
                 'items' => [
@@ -76,7 +91,7 @@ trait HasOrderStructure
                 'id' => 'PROC123',
                 'status' => TransactionStatuses::PENDING, // One of TransactionStatuses constants
                 'authResult' => 'AUTH',
-                'updated_at' => '2024-06-01T12:05:00.000Z',
+                'updatedAt' => '2024-06-01T12:05:00.000Z',
                 'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
                 'declineCode' => '00',
                 'processorAuthCode' => 'AUTHCODE123',
@@ -84,11 +99,10 @@ trait HasOrderStructure
                 'acquirerReferenceNumber' => 'ARN123',
             ],
             'instrument' => [
-                'type' => 'CARD',
                 'card' => [
                     'bin' => '411111',
-                    'last_4' => '1111',
-                    'card_brand' => 'VISA',
+                    'last4' => '1111',
+                    'cardBrand' => 'VISA',
                 ],
             ],
             'payer' => [
@@ -111,30 +125,29 @@ trait HasOrderStructure
                 ],
             ],
             'shipping' => [
-                'name' => 'John',
-                'surname' => 'Doe',
-                'preferred' => 'Johnny',
-                'middle' => 'A',
-                'prefix' => 'Mr.',
-                'suffix' => 'Jr.',
-                'email' => 'john.doe@example.com',
-                'mobile' => '+1234567890',
-                'dateOfBirth' => '1990-01-01',
-                'address' => [
-                    'street' => '123 Main St',
-                    'street2' => 'Apt 4',
-                    'city' => 'New York',
-                    'state' => 'NY',
-                    'country' => 'US',
-                    'postalCode' => '10001',
+                'person' => [
+                    'name' => 'John',
+                    'surname' => 'Doe',
+                    'preferred' => 'Johnny',
+                    'middle' => 'A',
+                    'prefix' => 'Mr.',
+                    'suffix' => 'Jr.',
+                    'email' => 'john.doe@example.com',
+                    'mobile' => '+1234567890',
+                    'dateOfBirth' => '1990-01-01',
+                    'address' => [
+                        'street' => '123 Main St',
+                        'street2' => 'Apt 4',
+                        'city' => 'New York',
+                        'state' => 'NY',
+                        'country' => 'US',
+                        'postalCode' => '10001',
+                    ],
                 ],
                 'type' => ShippingTypes::LOCAL_DELIVERY,
-                'delivery' => [
-                    'amount' => 1500,
-                    'provider' => 'FedEx',
-                    'trackingNumber' => 'TRACK123',
-                    'method' => ShippingMethods::EXPRESS,
-                ],
+                'provider' => 'FedEx',
+                'trackingNumber' => 'TRACK123',
+                'method' => ShippingMethods::EXPRESS,
                 'accessUrl' => 'www.google.com/downloadTesting',
                 'digitalDownloaded' => 'false',
                 'downloadDeviceIp' => '168.161.1.1',

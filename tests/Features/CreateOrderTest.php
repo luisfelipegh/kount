@@ -68,18 +68,34 @@ class CreateOrderTest extends BaseTestCase
             [
                 'ipAddress' => '127.0.0.1',
                 'kountSessionId' => 'KountDeviceIdDDC',
+                'createdAt' => '2024-06-01T12:00:00.000Z',
                 'payment' => [
                     'reference' => 'TESTING_REFERENCE',
-                    'created_at' => '2024-06-01T12:00:00.000Z',
                     'amount' => [
                         'subtotal' => 100,
                         'total' => 120,
                         'currency' => 'USD',
                         'isDecimal' => true,
-                        'tax' => [
-                            'total' => 20,
-                            'country' => 'US',
-                            'outOfStateTotal' => 5,
+                        'taxCountry' => 'US',
+                        'taxes' => [
+                            [
+                                'kind' => 'municipalTax',
+                                'amount' => 15,
+                            ],
+                            [
+                                'kind' => 'outOfStateTotal',
+                                'amount' => 5,
+                            ],
+                        ],
+                        'details' => [
+                            [
+                                'kind' => 'subtotal',
+                                'amount' => 100,
+                            ],
+                            [
+                                'kind' => 'shipping',
+                                'amount' => 1500,
+                            ],
                         ],
                     ],
                     'items' => [
@@ -128,7 +144,7 @@ class CreateOrderTest extends BaseTestCase
                     'id' => 'PROC123',
                     'status' => TransactionStatuses::PENDING,
                     'authResult' => 'AUTH',
-                    'updated_at' => '2024-06-01T12:05:00.000Z',
+                    'updatedAt' => '2024-06-01T12:05:00.000Z',
                     'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
                     'declineCode' => '00',
                     'processorAuthCode' => 'AUTHCODE123',
@@ -136,11 +152,10 @@ class CreateOrderTest extends BaseTestCase
                     'acquirerReferenceNumber' => 'ARN123',
                 ],
                 'instrument' => [
-                    'type' => 'CARD',
                     'card' => [
                         'bin' => '411111',
-                        'last_4' => '1111',
-                        'card_brand' => 'VISA',
+                        'last4' => '1111',
+                        'cardBrand' => 'VISA',
                     ],
                 ],
                 'payer' => [
@@ -163,29 +178,28 @@ class CreateOrderTest extends BaseTestCase
                     ],
                 ],
                 'shipping' => [
-                    'name' => 'John',
-                    'surname' => 'Doe',
-                    'preferred' => 'Johnny',
-                    'middle' => 'A',
-                    'prefix' => 'Mr.',
-                    'suffix' => 'Jr.',
-                    'email' => 'john.doe@example.com',
-                    'mobile' => '+1234567890',
-                    'dateOfBirth' => '1990-01-01',
-                    'address' => [
-                        'street' => '123 Main St',
-                        'city' => 'New York',
-                        'state' => 'NY',
-                        'country' => 'US',
-                        'postalCode' => '10001',
+                    'person' => [
+                        'name' => 'John',
+                        'surname' => 'Doe',
+                        'preferred' => 'Johnny',
+                        'middle' => 'A',
+                        'prefix' => 'Mr.',
+                        'suffix' => 'Jr.',
+                        'email' => 'john.doe@example.com',
+                        'mobile' => '+1234567890',
+                        'dateOfBirth' => '1990-01-01',
+                        'address' => [
+                            'street' => '123 Main St',
+                            'city' => 'New York',
+                            'state' => 'NY',
+                            'country' => 'US',
+                            'postalCode' => '10001',
+                        ],
                     ],
                     'type' => ShippingTypes::LOCAL_DELIVERY,
-                    'delivery' => [
-                        'amount' => 1500,
-                        'provider' => 'FedEx',
-                        'trackingNumber' => 'TRACK123',
-                        'method' => ShippingMethods::EXPRESS,
-                    ],
+                    'provider' => 'FedEx',
+                    'trackingNumber' => 'TRACK123',
+                    'method' => ShippingMethods::EXPRESS,
                     'store' => [
                         'id' => 'STORE001',
                         'name' => 'Main Store',

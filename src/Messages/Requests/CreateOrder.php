@@ -15,7 +15,7 @@ class CreateOrder extends Base
             'channel' => $this->channel,
             'merchantCategoryCode' => $this->data['merchantCategoryCode'] ?? null,
             'deviceSessionId' => $this->data['kountSessionId'] ?? null,
-            'creationDateTime' => $this->data['payment']['created_at'] ?? null,
+            'creationDateTime' => $this->data['createdAt'] ?? null,
             'items' => [],
         ];
 
@@ -82,44 +82,45 @@ class CreateOrder extends Base
 
     private function setTransactionInformation(): void
     {
+        $subtotal = array_values(array_filter($this->data['payment']['amount']['details'], function ($value) {
+            return isset($value['kind']) && $value['kind'] === 'subtotal';
+        }))[0] ?? [];
+
         $transaction = [
             'processor' => $this->data['transaction']['processor'] ?? null,
             'processorMerchantId' => $this->data['transaction']['id'] ?? null,
-            'payment' => [
-                'type' => $this->data['instrument']['type'] ?? null,
-            ],
-            'subtotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['subtotal'] ?? null, $this->getCurrency(), $this->amountIsDecimal()) : null,
+            'subtotal' => isset($subtotal['amount']) && $this->getCurrency() ? AmountHelper::parseAmount($subtotal['amount'], $this->getCurrency(), $this->amountIsDecimal()) : null,
             'orderTotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['total'], $this->getCurrency(), $this->amountIsDecimal()) : null,
             'currency' => $this->getCurrency(),
             'merchantTransactionId' => $this->data['payment']['reference'] ?? null,
         ];
 
-        if (isset($this->data['payment']['amount']['tax'])) {
+        if (isset($this->data['payment']['amount']['taxes'])) {
             $transaction['tax'] = [
                 'isTaxable' => true,
             ];
 
-            if (isset($this->data['payment']['amount']['tax']['total'])) {
-                $transaction['tax']['taxAmount'] = AmountHelper::parseAmount($this->data['payment']['amount']['tax']['total'], $this->getCurrency(), $this->amountIsDecimal());
+            $total = 0;
+            $outOfStateTotal = 0;
+
+            foreach ($this->data['payment']['amount']['taxes'] as $tax) {
+                $total += $tax['amount'] ?? 0;
+                if (isset($tax['kind']) && $tax['kind'] === 'outOfStateTotal') {
+                    $outOfStateTotal += $tax['amount'];
+                }
             }
 
-            if (isset($this->data['payment']['amount']['tax']['country'])) {
-                $transaction['tax']['taxableCountryCode'] = $this->data['payment']['amount']['tax']['country'];
+            if ($total) {
+                $transaction['tax']['taxAmount'] = AmountHelper::parseAmount($total, $this->getCurrency(), $this->amountIsDecimal());
             }
 
-            if (isset($this->data['payment']['amount']['tax']['outOfStateTotal'])) {
-                $transaction['tax']['outOfStateTotal'] = AmountHelper::parseAmount($this->data['payment']['amount']['tax']['outOfStateTotal'], $this->getCurrency(), $this->amountIsDecimal());
+            if (isset($this->data['payment']['amount']['taxCountry'])) {
+                $transaction['tax']['taxableCountryCode'] = $this->data['payment']['amount']['taxCountry'];
             }
-        }
 
-        if (isset($transaction['payment']['type']) && PaymentTypes::TOKEN == $transaction['payment']['type']) {
-            $transaction['payment']['paymentToken'] = $this->data['instrument']['card']['pan_hash'] ?? null;
-        }
-
-        if (isset($transaction['payment']['type']) && PaymentTypes::CARD == $transaction['payment']['type']) {
-            $transaction['payment']['bin'] = $this->data['instrument']['card']['bin'] ?? null;
-            $transaction['payment']['last4'] = $this->data['instrument']['card']['last_4'] ?? null;
-            $transaction['payment']['cardBrand'] = $this->data['instrument']['card']['card_brand'] ?? null;
+            if ($outOfStateTotal) {
+                $transaction['tax']['outOfStateTotal'] = AmountHelper::parseAmount($outOfStateTotal, $this->getCurrency(), $this->amountIsDecimal());
+            }
         }
 
         if (isset($this->data['payer'])) {
@@ -130,25 +131,28 @@ class CreateOrder extends Base
             $transaction['items'] = $this->getResumeOfItems();
         }
 
-        if (PaymentTypes::NONE != $transaction['payment']['type']) {
-            $transaction['payment'] = [
-                'type' => $this->data['instrument']['type'] ?? null,
-                'paymentToken' => $this->data['instrument']['card']['pan_hash'] ?? null,
-                'bin' => $this->data['instrument']['card']['bin'] ?? null,
-                'last4' => $this->data['instrument']['card']['last_4'] ?? null,
-                'cardBrand' => $this->data['instrument']['card']['card_brand'] ?? null,
-            ];
+        if (isset($this->data['instrument']['card'])) {
+            $transaction['payment']['type'] = PaymentTypes::CARD;
+            $transaction['payment']['bin'] = $this->data['instrument']['card']['bin'] ?? null;
+            $transaction['payment']['last4'] = $this->data['instrument']['card']['last4'] ?? null;
+            $transaction['payment']['cardBrand'] = $this->data['instrument']['card']['cardBrand'] ?? null;
+        } elseif (isset($this->data['instrument']['token'])) {
+            $transaction['payment']['type'] = PaymentTypes::TOKEN;
+            $transaction['payment']['paymentToken'] = $this->data['instrument']['token']['token'] ?? null;
+        } else {
+            $transaction['payment']['type'] = PaymentTypes::NONE;
         }
 
         $transaction['transactionStatus'] = $this->data['transaction']['status'] ?? null;
 
         $transaction['authorizationStatus'] = [
             'authResult' => $this->data['transaction']['authResult'] ?? null,
+            'dateTime' => $this->data['transaction']['updatedAt'] ?? null,
+            'declineCode' => $this->data['transaction']['declineCode'],
+            'processorAuthCode' => $this->data['transaction']['processorAuthCode'],
+            'processorTransactionId' => $this->data['transaction']['processorTransactionId'],
+            'acquirerReferenceNumber' => $this->data['transaction']['acquirerReferenceNumber'],
         ];
-
-        if (isset($this->data['transaction']['updated_at'])) {
-            $transaction['authorizationStatus']['dateTime'] = $this->data['transaction']['updated_at'];
-        }
 
         if (isset($this->data['transaction']['verification'])) {
             if (isset($this->data['transaction']['verification']['cvvStatus'])) {
@@ -160,43 +164,32 @@ class CreateOrder extends Base
             }
         }
 
-        if (isset($this->data['transaction']['declineCode'])) {
-            $transaction['authorizationStatus']['declineCode'] = $this->data['transaction']['declineCode'];
-        }
-        if (isset($this->data['transaction']['processorAuthCode'])) {
-            $transaction['authorizationStatus']['processorAuthCode'] = $this->data['transaction']['processorAuthCode'];
-        }
-        if (isset($this->data['transaction']['processorTransactionId'])) {
-            $transaction['authorizationStatus']['processorTransactionId'] = $this->data['transaction']['processorTransactionId'];
-        }
-        if (isset($this->data['transaction']['acquirerReferenceNumber'])) {
-            $transaction['authorizationStatus']['acquirerReferenceNumber'] = $this->data['transaction']['acquirerReferenceNumber'];
-        }
-
         $this->requestData['transactions'][] = $transaction;
     }
 
     protected function getPerson(string $type): array
     {
+        $array = ArrayHelper::get($this->data, $type);
+
         return [
             'name' => [
-                'first' => $this->data[$type]['name'] ?? null,
-                'family' => $this->data[$type]['surname'] ?? null,
-                'preferred' => $this->data[$type]['preferred'] ?? null,
-                'middle' => $this->data[$type]['middle'] ?? null,
-                'prefix' => $this->data[$type]['prefix'] ?? null,
-                'suffix' => $this->data[$type]['suffix'] ?? null,
+                'first' => $array['name'] ?? null,
+                'family' => $array['surname'] ?? null,
+                'preferred' => $array['preferred'] ?? null,
+                'middle' => $array['middle'] ?? null,
+                'prefix' => $array['prefix'] ?? null,
+                'suffix' => $array['suffix'] ?? null,
             ],
-            'emailAddress' => $this->data[$type]['email'] ?? null,
-            'phoneNumber' => $this->data[$type]['mobile'] ?? null,
-            'dateOfBirth' => $this->data[$type]['dateOfBirth'] ?? null,
+            'emailAddress' => $array['email'] ?? null,
+            'phoneNumber' => $array['mobile'] ?? null,
+            'dateOfBirth' => $array['dateOfBirth'] ?? null,
             'address' => [
-                'line1' => $this->data[$type]['address']['street'] ?? null,
-                'line2' => $this->data[$type]['address']['street2'] ?? null,
-                'city' => $this->data[$type]['address']['city'] ?? null,
-                'region' => $this->data[$type]['address']['state'] ?? null,
-                'countryCode' => $this->data[$type]['address']['country'] ?? null,
-                'postalCode' => $this->data[$type]['address']['postalCode'] ?? null,
+                'line1' => $array['address']['street'] ?? null,
+                'line2' => $array['address']['street2'] ?? null,
+                'city' => $array['address']['city'] ?? null,
+                'region' => $array['address']['state'] ?? null,
+                'countryCode' => $array['address']['country'] ?? null,
+                'postalCode' => $array['address']['postalCode'] ?? null,
             ],
         ];
     }
@@ -273,18 +266,21 @@ class CreateOrder extends Base
             'accessUrl' => $this->data['shipping']['accessUrl'] ?? null,
             'downloadDeviceIp' => $this->data['shipping']['downloadDeviceIp'] ?? null,
             'merchantFulfillmentId' => $this->data['shipping']['merchantFulfillmentId'] ?? null,
-            'recipientPerson' => $this->getPerson('shipping'),
+            'recipientPerson' => $this->getPerson('shipping.person'),
         ];
 
-        if (isset($this->data['shipping']['delivery'])) {
-            $fulfillment['shipping']['amount'] =
-                isset($this->data['shipping']['delivery']['amount']) && $this->getCurrency() ?
-                    AmountHelper::parseAmount($this->data['shipping']['delivery']['amount'], $this->getCurrency(), $this->amountIsDecimal())
-                    : null;
-            $fulfillment['shipping']['provider'] = $this->data['shipping']['delivery']['provider'] ?? null;
-            $fulfillment['shipping']['trackingNumber'] = $this->data['shipping']['delivery']['trackingNumber'] ?? null;
-            $fulfillment['shipping']['method'] = $this->data['shipping']['delivery']['method'] ?? null;
-        }
+        $shipping = array_values(array_filter($this->data['payment']['amount']['details'], function ($value) {
+            return isset($value['kind']) && $value['kind'] === 'shipping';
+        }))[0] ?? [];
+
+        $fulfillment['shipping']['amount'] =
+            isset($shipping['amount']) && $this->getCurrency() ?
+                AmountHelper::parseAmount($shipping['amount'], $this->getCurrency(), $this->amountIsDecimal())
+                : null;
+
+        $fulfillment['shipping']['provider'] = $this->data['shipping']['provider'] ?? null;
+        $fulfillment['shipping']['trackingNumber'] = $this->data['shipping']['trackingNumber'] ?? null;
+        $fulfillment['shipping']['method'] = $this->data['shipping']['method'] ?? null;
 
         if ($this->requestData['items']) {
             $fulfillment['items'] = $this->getResumeOfItems();

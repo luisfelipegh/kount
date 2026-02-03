@@ -3,6 +3,7 @@
 ## Installation
 
 This SDK can be installed easily through composer
+
 ```
 composer require placetopay/kount
 ```
@@ -24,7 +25,9 @@ First on the page where the credit card information will be gathered you need to
 Note: It HAS to be over HTTPS, and it does NOT has to be on the root of your url, you can use https://YOUR_WEBPAGE_URL/kount/something/logo.htm, and I'm not entirely sure that it needs to call logo.htm and logo.gif, but I'm using those names anyway
 
 ```html
-<iframe width=1 height=1 frameborder=0 scrolling=no src="https://YOUR_WEBPAGE_URL/logo.htm?m=YOUR_MERCHANT&s=THE_SESSION">
+
+<iframe width=1 height=1 frameborder=0 scrolling=no
+        src="https://YOUR_WEBPAGE_URL/logo.htm?m=YOUR_MERCHANT&s=THE_SESSION">
     <img width=1 height=1 src="https://YOUR_WEBPAGE_URL/logo.gif?m=YOUR_MERCHANT&s=THE_SESSION">
 </iframe>
 ```
@@ -51,19 +54,35 @@ just make an array with the information to send to Kount in this way
 $data = [
     'ipAddress' => '127.0.0.1',
     'kountSessionId' => 'KountDeviceIdDDC',
+    'createdAt' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
     'payment' => [
         'reference' => 'TESTING_REFERENCE',
-        'created_at' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
         'amount' => [
             'subtotal' => 100,
             'total' => 120,
             'currency' => 'USD',
             'isDecimal' => true,
-            'tax' => [
-                'total' => 20,
-                'country' => 'US',
-                'outOfStateTotal' => 5,
-            ],
+            'taxCountry' => 'US',
+            'taxes' => [         
+                [
+                    'kind' => 'outOfStateTotal',
+                    'amount' => 5,
+                ],
+                [
+                    'kind' => 'outOfStateTotal',
+                    'amount' => 5,
+                ],
+            ], 
+            'details' => [         
+                [
+                    'kind' => 'subtotal',
+                    'amount' => 10,
+                ],
+                [
+                    'kind' => 'shipping',
+                    'amount' => 5,
+                ],
+            ], 
         ],
         'items' => [
             [
@@ -111,7 +130,7 @@ $data = [
         'id' => 'PROC123',
         'status' => TransactionStatuses::PENDING, // One of TransactionStatuses constants
         'authResult' => 'AUTH',
-        'updated_at' => '2024-06-01T12:05:00.000Z',
+        'updatedAt' => '2024-06-01T12:05:00.000Z',
         'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
         'declineCode' => '00',
         'processorAuthCode' => 'AUTHCODE123',
@@ -119,11 +138,10 @@ $data = [
         'acquirerReferenceNumber' => 'ARN123',
     ],
     'instrument' => [
-        'type' => 'CARD',
         'card' => [
             'bin' => '411111',
-            'last_4' => '1111',
-            'card_brand' => 'VISA',
+            'last4' => '1111',
+            'cardBrand' => 'VISA',
         ],
     ],
     'payer' => [
@@ -145,7 +163,7 @@ $data = [
             'postalCode' => '10001',
         ],
     ],
-    'shipping' => [
+    'shippingPerson' => [
         'name' => 'John',
         'surname' => 'Doe',
         'preferred' => 'Johnny',
@@ -162,13 +180,30 @@ $data = [
             'country' => 'US',
             'postalCode' => '10001',
         ],
-        'type' => ShippingTypes::LOCAL_DELIVERY, // One of ShippingTypes constants
-        'delivery' => [
-            'amount' => 1500,
-            'provider' => 'FedEx',
-            'trackingNumber' => 'TRACK123',
-            'method' => ShippingMethods::EXPRESS, // One of ShippingMethods constants
+    ],
+    'shipping'  => [ 
+        'person' => [
+            'name' => 'John',
+            'surname' => 'Doe',
+            'preferred' => 'Johnny',
+            'middle' => 'A',
+            'prefix' => 'Mr.',
+            'suffix' => 'Jr.',
+            'email' => 'john.doe@example.com',
+            'mobile' => '+1234567890',
+            'dateOfBirth' => '1990-01-01',
+            'address' => [
+                'street' => '123 Main St',
+                'city' => 'New York',
+                'state' => 'NY',
+                'country' => 'US',
+                'postalCode' => '10001',
+            ],
         ],
+        'type' => ShippingTypes::LOCAL_DELIVERY, // One of ShippingTypes constants
+        'provider' => 'FedEx',
+        'trackingNumber' => 'TRACK123',
+        'method' => ShippingMethods::EXPRESS, // One of ShippingMethods constants
         'store' => [
             'id' => 'STORE001',
             'name' => 'Main Store',
@@ -252,6 +287,7 @@ $data = [
     ],
 ];
 ```
+
 Please try to provide as much information as you can, but there is NOT required shipping, gender, shipmentType, more than 1 item (It has to be at least one), address for payer information
 
 ```php
@@ -403,7 +439,6 @@ $response->toArray();
  */
 ```
 
-
 #### Triggered rules
 
 ```php
@@ -440,6 +475,7 @@ return new KountService([
     ...
 ]);
 ```
+
 ## Mock Options
 
 After this mock instance is loaded, the available options to mock are listed below.  
