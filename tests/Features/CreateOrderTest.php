@@ -67,8 +67,7 @@ class CreateOrderTest extends BaseTestCase
         $request = $this->getOrderRequestStructure(
             [
                 'ipAddress' => '127.0.0.1',
-                'kountSessionId' => 'KountDeviceIdDDC',
-                'createdAt' => '2024-06-01T12:00:00.000Z',
+                'date' => '2024-06-01T12:00:00.000Z',
                 'payment' => [
                     'reference' => 'TESTING_REFERENCE',
                     'amount' => [
@@ -79,11 +78,11 @@ class CreateOrderTest extends BaseTestCase
                         'taxCountry' => 'US',
                         'taxes' => [
                             [
-                                'kind' => 'municipalTax',
+                                'kind' => 'iva',
                                 'amount' => 15,
                             ],
                             [
-                                'kind' => 'outOfStateTotal',
+                                'kind' => 'stateTax',
                                 'amount' => 5,
                             ],
                         ],
@@ -101,27 +100,30 @@ class CreateOrderTest extends BaseTestCase
                     'items' => [
                         [
                             'id' => 'ITEM1',
-                            'desc' => 'Product 1',
+                            'description' => 'Product 1',
+                            'name' => 'Product 1',
                             'qty' => 1,
                             'sku' => 'SKU1',
                             'price' => 70,
                             'category' => 'digital',
-                            'isDigital' => true,
-                            'subCategory' => 'software',
-                            'upc' => '123456789012',
-                            'brand' => 'BrandA',
-                            'url' => 'https://example.com/item1',
-                            'imageUrl' => 'https://example.com/item1.jpg',
-                            'attributes' => [
-                                'color' => 'red',
-                                'size' => 'M',
-                                'weight' => '1kg',
-                                'height' => '10cm',
-                                'width' => '5cm',
-                                'depth' => '2cm',
+                            'additional' => [
+                                'isDigital' => true,
+                                'subCategory' => 'software',
+                                'upc' => '123456789012',
+                                'brand' => 'BrandA',
+                                'url' => 'https://example.com/item1',
+                                'imageUrl' => 'https://example.com/item1.jpg',
+                                'attributes' => [
+                                    'color' => 'red',
+                                    'size' => 'M',
+                                    'weight' => '1kg',
+                                    'height' => '10cm',
+                                    'width' => '5cm',
+                                    'depth' => '2cm',
+                                ],
+                                'descriptors' => ['Special edition'],
+                                'isService' => false,
                             ],
-                            'descriptors' => ['Special edition'],
-                            'isService' => false,
                         ],
                         [
                             'id' => 'ITEM2',
@@ -129,6 +131,24 @@ class CreateOrderTest extends BaseTestCase
                             'qty' => 3,
                             'sku' => 'SKU2',
                             'price' => 30,
+                        ],
+                    ],
+                    'shipping' => [
+                        'name' => 'John',
+                        'surname' => 'Doe',
+                        'preferred' => 'Johnny',
+                        'middle' => 'A',
+                        'prefix' => 'Mr.',
+                        'suffix' => 'Jr.',
+                        'email' => 'john.doe@example.com',
+                        'mobile' => '+1234567890',
+                        'dateOfBirth' => '1990-01-01',
+                        'address' => [
+                            'street' => '123 Main St',
+                            'city' => 'New York',
+                            'state' => 'NY',
+                            'country' => 'US',
+                            'postalCode' => '10001',
                         ],
                     ],
                 ],
@@ -141,21 +161,23 @@ class CreateOrderTest extends BaseTestCase
                 ],
                 'transaction' => [
                     'processor' => 'VISA',
-                    'id' => 'PROC123',
                     'status' => TransactionStatuses::PENDING,
-                    'authResult' => 'AUTH',
-                    'updatedAt' => '2024-06-01T12:05:00.000Z',
+                    'authResult' => 'APPROVED',
+                    'date' => '2024-06-01T12:05:00.000Z',
                     'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
                     'declineCode' => '00',
-                    'processorAuthCode' => 'AUTHCODE123',
-                    'processorTransactionId' => 'TXN123',
-                    'acquirerReferenceNumber' => 'ARN123',
+                    'authorization' => 'AUTHCODE123',
+                    'processorId' => 'PROC123',
+                    'receipt' => 'ARN123',
                 ],
                 'instrument' => [
                     'card' => [
                         'bin' => '411111',
                         'last4' => '1111',
                         'cardBrand' => 'VISA',
+                    ],
+                    'kount' => [
+                        'session' => 'KountDeviceIdDDC',
                     ],
                 ],
                 'payer' => [
@@ -178,24 +200,6 @@ class CreateOrderTest extends BaseTestCase
                     ],
                 ],
                 'shipping' => [
-                    'person' => [
-                        'name' => 'John',
-                        'surname' => 'Doe',
-                        'preferred' => 'Johnny',
-                        'middle' => 'A',
-                        'prefix' => 'Mr.',
-                        'suffix' => 'Jr.',
-                        'email' => 'john.doe@example.com',
-                        'mobile' => '+1234567890',
-                        'dateOfBirth' => '1990-01-01',
-                        'address' => [
-                            'street' => '123 Main St',
-                            'city' => 'New York',
-                            'state' => 'NY',
-                            'country' => 'US',
-                            'postalCode' => '10001',
-                        ],
-                    ],
                     'type' => ShippingTypes::LOCAL_DELIVERY,
                     'provider' => 'FedEx',
                     'trackingNumber' => 'TRACK123',
@@ -212,7 +216,6 @@ class CreateOrderTest extends BaseTestCase
                     'accessUrl' => 'www.google.com/downloadTesting',
                     'digitalDownloaded' => 'false',
                     'downloadDeviceIp' => '168.161.1.1',
-                    'merchantFulfillmentId' => 'testing1233ljh',
                 ],
                 'promotions' => [
                     [
@@ -246,8 +249,8 @@ class CreateOrderTest extends BaseTestCase
                     'customData1' => 'value1',
                     'customData2' => 'value2',
                 ],
-                'merchantCategoryCode' => 'testingMMC',
                 'merchant' => [
+                    'merchantCategoryCode' => 'testingMMC',
                     'name' => 'merchantName',
                     'storeName' => 'storeNameTesting',
                     'websiteUrl' => 'websiteUrlTesting',
@@ -290,7 +293,6 @@ class CreateOrderTest extends BaseTestCase
             'merchantOrderId' => 'TESTING_REFERENCE',
             'deviceSessionId' => 'KountDeviceIdDDC',
             'creationDateTime' => '2024-06-01T12:00:00.000Z',
-            'merchantCategoryCode' => 'testingMMC',
             'items' => [
                 [
                     'id' => 'ITEM1',
@@ -316,6 +318,7 @@ class CreateOrderTest extends BaseTestCase
                         'Special edition',
                     ],
                     'isService' => false,
+                    'description' => 'Product 1',
                 ],
                 [
                     'id' => 'ITEM2',
@@ -385,14 +388,14 @@ class CreateOrderTest extends BaseTestCase
                     ],
                     'transactionStatus' => 'PENDING',
                     'authorizationStatus' => [
-                        'authResult' => 'AUTH',
+                        'authResult' => 'APPROVED',
                         'dateTime' => '2024-06-01T12:05:00.000Z',
                         'verificationResponse' => [
                             'avsStatus' => '2',
                         ],
                         'declineCode' => '00',
                         'processorAuthCode' => 'AUTHCODE123',
-                        'processorTransactionId' => 'TXN123',
+                        'processorTransactionId' => 'PROC123',
                         'acquirerReferenceNumber' => 'ARN123',
                     ],
                 ],
@@ -466,7 +469,7 @@ class CreateOrderTest extends BaseTestCase
                     ],
                     'accessUrl' => 'www.google.com/downloadTesting',
                     'downloadDeviceIp' => '168.161.1.1',
-                    'merchantFulfillmentId' => 'testing1233ljh',
+                    'merchantFulfillmentId' => 'TESTING_REFERENCE',
                     'digitalDownloaded' => false,
                     'store' => [
                         'id' => 'STORE001',
@@ -491,6 +494,7 @@ class CreateOrderTest extends BaseTestCase
                 'contactEmail' => 'contactEmail@testing.com',
                 'contactPhoneNumber' => '30022211111',
             ],
+            'merchantCategoryCode' => 'testingMMC',
             'links' => [
                 'viewOrderUrl' => 'testingUrlViewOrderUrl',
                 'requestRefundUrl' => 'testingUrlRequestRefundUrl',

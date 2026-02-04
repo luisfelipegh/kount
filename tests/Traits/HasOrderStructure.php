@@ -22,8 +22,7 @@ trait HasOrderStructure
     {
         return array_replace_recursive([
             'ipAddress' => '192.168.1.1',
-            'kountSessionId' => 'SESSION123',
-            'createdAt' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
+            'date' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
             'payment' => [
                 'reference' => 'ORDER123',
                 'amount' => [
@@ -33,11 +32,11 @@ trait HasOrderStructure
                     'taxCountry' => 'US',
                     'taxes' => [
                         [
-                            'kind' => 'outOfStateTotal',
+                            'kind' => 'iva',
                             'amount' => 5,
                         ],
                         [
-                            'kind' => 'outOfStateTotal',
+                            'kind' => 'stateTax',
                             'amount' => 5,
                         ],
                     ],
@@ -60,51 +59,80 @@ trait HasOrderStructure
                         'sku' => 'SKU1',
                         'price' => 5000,
                         'category' => 'digital',
-                        'isDigital' => true,
-                        'subCategory' => 'software',
-                        'upc' => '123456789012',
-                        'brand' => 'BrandA',
-                        'url' => 'https://example.com/item1',
-                        'imageUrl' => 'https://example.com/item1.jpg',
-                        'attributes' => [
-                            'color' => 'red',
-                            'size' => 'M',
-                            'weight' => '1kg',
-                            'height' => '10cm',
-                            'width' => '5cm',
-                            'depth' => '2cm',
+                        'additional' => [
+                            'isDigital' => true,
+                            'subCategory' => 'software',
+                            'upc' => '123456789012',
+                            'brand' => 'BrandA',
+                            'url' => 'https://example.com/item1',
+                            'imageUrl' => 'https://example.com/item1.jpg',
+                            'attributes' => [
+                                'color' => 'red',
+                                'size' => 'M',
+                                'weight' => '1kg',
+                                'height' => '10cm',
+                                'width' => '5cm',
+                                'depth' => '2cm',
+                            ],
+                            'descriptors' => ['Special edition'],
+                            'isService' => false,
                         ],
-                        'descriptors' => ['Special edition'],
-                        'isService' => false,
+                    ],
+                ],
+                'shipping' => [
+                    'name' => 'John',
+                    'surname' => 'Doe',
+                    'preferred' => 'Johnny',
+                    'middle' => 'A',
+                    'prefix' => 'Mr.',
+                    'suffix' => 'Jr.',
+                    'email' => 'john.doe@example.com',
+                    'mobile' => '+1234567890',
+                    'dateOfBirth' => '1990-01-01',
+                    'address' => [
+                        'street' => '123 Main St',
+                        'street2' => 'Apt 4',
+                        'city' => 'New York',
+                        'state' => 'NY',
+                        'country' => 'US',
+                        'postalCode' => '10001',
                     ],
                 ],
             ],
+
             'account' => [
-                'id' => 'ACC123',
+                'id' => '103752',
                 'type' => 'customer',
                 'creationDateTime' => '2020-01-01T00:00:00.000Z', // must be in RFC3339 format and must not be in the future
                 'username' => 'user1',
                 'accountIsActive' => true,
             ],
+
             'transaction' => [
                 'processor' => 'VISA',
-                'id' => 'PROC123',
+                'processorId' => 'PROC123',
                 'status' => TransactionStatuses::PENDING, // One of TransactionStatuses constants
                 'authResult' => 'AUTH',
-                'updatedAt' => '2024-06-01T12:05:00.000Z',
-                'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
+                'verification' => [
+                    'cvvStatus' => '',
+                    'avsStatus' => '2',
+                ],
                 'declineCode' => '00',
-                'processorAuthCode' => 'AUTHCODE123',
-                'processorTransactionId' => 'TXN123',
-                'acquirerReferenceNumber' => 'ARN123',
+                'authorization' => 'AUTHCODE123',
+                'receipt' => 'ARN123',
             ],
+
             'instrument' => [
                 'card' => [
                     'bin' => '411111',
                     'last4' => '1111',
                     'cardBrand' => 'VISA',
                 ],
+                'kount' => [
+                    'session' => 'SESSION123',
+                ],
             ],
+
             'payer' => [
                 'name' => 'John',
                 'surname' => 'Doe',
@@ -124,26 +152,8 @@ trait HasOrderStructure
                     'postalCode' => '10001',
                 ],
             ],
+
             'shipping' => [
-                'person' => [
-                    'name' => 'John',
-                    'surname' => 'Doe',
-                    'preferred' => 'Johnny',
-                    'middle' => 'A',
-                    'prefix' => 'Mr.',
-                    'suffix' => 'Jr.',
-                    'email' => 'john.doe@example.com',
-                    'mobile' => '+1234567890',
-                    'dateOfBirth' => '1990-01-01',
-                    'address' => [
-                        'street' => '123 Main St',
-                        'street2' => 'Apt 4',
-                        'city' => 'New York',
-                        'state' => 'NY',
-                        'country' => 'US',
-                        'postalCode' => '10001',
-                    ],
-                ],
                 'type' => ShippingTypes::LOCAL_DELIVERY,
                 'provider' => 'FedEx',
                 'trackingNumber' => 'TRACK123',
@@ -151,8 +161,8 @@ trait HasOrderStructure
                 'accessUrl' => 'www.google.com/downloadTesting',
                 'digitalDownloaded' => 'false',
                 'downloadDeviceIp' => '168.161.1.1',
-                'merchantFulfillmentId' => 'testing1233ljh',
             ],
+
             'store' => [
                 'id' => 'STORE001',
                 'name' => 'Main Store',
@@ -162,6 +172,7 @@ trait HasOrderStructure
                     'country' => 'US',
                 ],
             ],
+
             'promotions' => [
                 [
                     'id' => 'PROMO1',
@@ -180,6 +191,7 @@ trait HasOrderStructure
                     ],
                 ],
             ],
+
             'loyalty' => [
                 'id' => 'LOYALTY1',
                 'description' => 'Loyalty program',
@@ -189,6 +201,7 @@ trait HasOrderStructure
                     'currency' => 'USD',
                 ],
             ],
+
             'additional' => ['customData1' => 'value1'],
         ], $overrides);
     }

@@ -51,10 +51,10 @@ Once the card information, payer data, items and other has been captured and you
 just make an array with the information to send to Kount in this way
 
 ```php
-$data = [
+
+$request = [
     'ipAddress' => '127.0.0.1',
-    'kountSessionId' => 'KountDeviceIdDDC',
-    'createdAt' => '2024-06-01T12:00:00.000Z', // must be in RFC3339 format and must not be in the future
+    'date' => '2024-06-01T12:00:00.000Z',
     'payment' => [
         'reference' => 'TESTING_REFERENCE',
         'amount' => [
@@ -63,51 +63,54 @@ $data = [
             'currency' => 'USD',
             'isDecimal' => true,
             'taxCountry' => 'US',
-            'taxes' => [         
+            'taxes' => [
                 [
-                    'kind' => 'outOfStateTotal',
-                    'amount' => 5,
+                    'kind' => 'iva',
+                    'amount' => 15,
                 ],
                 [
-                    'kind' => 'outOfStateTotal',
+                    'kind' => 'stateTax',
                     'amount' => 5,
                 ],
-            ], 
-            'details' => [         
+            ],
+            'details' => [
                 [
                     'kind' => 'subtotal',
-                    'amount' => 10,
+                    'amount' => 100,
                 ],
                 [
                     'kind' => 'shipping',
-                    'amount' => 5,
+                    'amount' => 1500,
                 ],
-            ], 
+            ],
         ],
         'items' => [
             [
                 'id' => 'ITEM1',
-                'desc' => 'Product 1',
+                'description' => 'Product 1',
+                'name' => 'Product 1',
                 'qty' => 1,
                 'sku' => 'SKU1',
                 'price' => 70,
                 'category' => 'digital',
-                'isDigital' => true,
-                'subCategory' => 'software',
-                'upc' => '123456789012',
-                'brand' => 'BrandA',
-                'url' => 'https://example.com/item1',
-                'imageUrl' => 'https://example.com/item1.jpg',
-                'attributes' => [
-                    'color' => 'red',
-                    'size' => 'M',
-                    'weight' => '1kg',
-                    'height' => '10cm',
-                    'width' => '5cm',
-                    'depth' => '2cm',
+                'additional' => [
+                    'isDigital' => true,
+                    'subCategory' => 'software',
+                    'upc' => '123456789012',
+                    'brand' => 'BrandA',
+                    'url' => 'https://example.com/item1',
+                    'imageUrl' => 'https://example.com/item1.jpg',
+                    'attributes' => [
+                        'color' => 'red',
+                        'size' => 'M',
+                        'weight' => '1kg',
+                        'height' => '10cm',
+                        'width' => '5cm',
+                        'depth' => '2cm',
+                    ],
+                    'descriptors' => ['Special edition'],
+                    'isService' => false,
                 ],
-                'descriptors' => ['Special edition'],
-                'isService' => false,
             ],
             [
                 'id' => 'ITEM2',
@@ -117,31 +120,51 @@ $data = [
                 'price' => 30,
             ],
         ],
+        'shipping' => [
+            'name' => 'John',
+            'surname' => 'Doe',
+            'preferred' => 'Johnny',
+            'middle' => 'A',
+            'prefix' => 'Mr.',
+            'suffix' => 'Jr.',
+            'email' => 'john.doe@example.com',
+            'mobile' => '+1234567890',
+            'dateOfBirth' => '1990-01-01',
+            'address' => [
+                'street' => '123 Main St',
+                'city' => 'New York',
+                'state' => 'NY',
+                'country' => 'US',
+                'postalCode' => '10001',
+            ],
+        ],
     ],
     'account' => [
         'id' => 'ACC123',
         'type' => 'customer',
-        'creationDateTime' => '2020-01-01T00:00:00.000Z', // must be in RFC3339 format and must not be in the future
+        'creationDateTime' => '2020-01-01T00:00:00.000Z',
         'username' => 'user1',
         'accountIsActive' => true,
     ],
     'transaction' => [
         'processor' => 'VISA',
-        'id' => 'PROC123',
-        'status' => TransactionStatuses::PENDING, // One of TransactionStatuses constants
-        'authResult' => 'AUTH',
-        'updatedAt' => '2024-06-01T12:05:00.000Z',
+        'status' => TransactionStatuses::PENDING,
+        'authResult' => 'APPROVED',
+        'date' => '2024-06-01T12:05:00.000Z',
         'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
         'declineCode' => '00',
-        'processorAuthCode' => 'AUTHCODE123',
-        'processorTransactionId' => 'TXN123',
-        'acquirerReferenceNumber' => 'ARN123',
+        'authorization' => 'AUTHCODE123',
+        'processorId' => 'PROC123',
+        'receipt' => 'ARN123',
     ],
     'instrument' => [
         'card' => [
             'bin' => '411111',
             'last4' => '1111',
             'cardBrand' => 'VISA',
+        ],
+        'kount' => [
+            'session' => 'KountDeviceIdDDC',
         ],
     ],
     'payer' => [
@@ -163,47 +186,11 @@ $data = [
             'postalCode' => '10001',
         ],
     ],
-    'shippingPerson' => [
-        'name' => 'John',
-        'surname' => 'Doe',
-        'preferred' => 'Johnny',
-        'middle' => 'A',
-        'prefix' => 'Mr.',
-        'suffix' => 'Jr.',
-        'email' => 'john.doe@example.com',
-        'mobile' => '+1234567890',
-        'dateOfBirth' => '1990-01-01',
-        'address' => [
-            'street' => '123 Main St',
-            'city' => 'New York',
-            'state' => 'NY',
-            'country' => 'US',
-            'postalCode' => '10001',
-        ],
-    ],
-    'shipping'  => [ 
-        'person' => [
-            'name' => 'John',
-            'surname' => 'Doe',
-            'preferred' => 'Johnny',
-            'middle' => 'A',
-            'prefix' => 'Mr.',
-            'suffix' => 'Jr.',
-            'email' => 'john.doe@example.com',
-            'mobile' => '+1234567890',
-            'dateOfBirth' => '1990-01-01',
-            'address' => [
-                'street' => '123 Main St',
-                'city' => 'New York',
-                'state' => 'NY',
-                'country' => 'US',
-                'postalCode' => '10001',
-            ],
-        ],
-        'type' => ShippingTypes::LOCAL_DELIVERY, // One of ShippingTypes constants
+    'shipping' => [
+        'type' => ShippingTypes::LOCAL_DELIVERY,
         'provider' => 'FedEx',
         'trackingNumber' => 'TRACK123',
-        'method' => ShippingMethods::EXPRESS, // One of ShippingMethods constants
+        'method' => ShippingMethods::EXPRESS,
         'store' => [
             'id' => 'STORE001',
             'name' => 'Main Store',
@@ -216,7 +203,6 @@ $data = [
         'accessUrl' => 'www.google.com/downloadTesting',
         'digitalDownloaded' => 'false',
         'downloadDeviceIp' => '168.161.1.1',
-        'merchantFulfillmentId' => 'testing1233ljh',
     ],
     'promotions' => [
         [
@@ -250,8 +236,8 @@ $data = [
         'customData1' => 'value1',
         'customData2' => 'value2',
     ],
-    'merchantCategoryCode' => 'testingMMC',
     'merchant' => [
+        'merchantCategoryCode' => 'testingMMC',
         'name' => 'merchantName',
         'storeName' => 'storeNameTesting',
         'websiteUrl' => 'websiteUrlTesting',

@@ -13,9 +13,8 @@ class CreateOrder extends Base
         $this->requestData = [
             'merchantOrderId' => $this->data['payment']['reference'] ?? null,
             'channel' => $this->channel,
-            'merchantCategoryCode' => $this->data['merchantCategoryCode'] ?? null,
-            'deviceSessionId' => $this->data['kountSessionId'] ?? null,
-            'creationDateTime' => $this->data['createdAt'] ?? null,
+            'deviceSessionId' => $this->data['instrument']['kount']['session'] ?? null,
+            'creationDateTime' => $this->data['date'] ?? null,
             'items' => [],
         ];
 
@@ -60,22 +59,22 @@ class CreateOrder extends Base
                 'quantity' => $item['qty'] ?? null,
                 'sku' => $item['sku'] ?? null,
                 'category' => $item['category'] ?? null,
-                'isDigital' => isset($item['category']) ? $item['category'] == 'digital' : ($item['isDigital'] ?? null),
-                'subCategory' => $item['subCategory'] ?? null,
-                'upc' => $item['upc'] ?? null,
-                'brand' => $item['brand'] ?? null,
-                'url' => $item['url'] ?? null,
-                'imageUrl' => $item['imageUrl'] ?? null,
+                'isDigital' => isset($item['additional']['category']) ? $item['additional']['category'] == 'digital' : ($item['additional']['isDigital'] ?? null),
+                'subCategory' => $item['additional']['subCategory'] ?? null,
+                'upc' => $item['additional']['upc'] ?? null,
+                'brand' => $item['additional']['brand'] ?? null,
+                'url' => $item['additional']['url'] ?? null,
+                'imageUrl' => $item['additional']['imageUrl'] ?? null,
                 'physicalAttributes' => [
-                    'color' => $item['attributes']['color'] ?? null,
-                    'size' => $item['attributes']['size'] ?? null,
-                    'weight' => $item['attributes']['weight'] ?? null,
-                    'height' => $item['attributes']['height'] ?? null,
-                    'width' => $item['attributes']['width'] ?? null,
-                    'depth' => $item['attributes']['depth'] ?? null,
+                    'color' => $item['additional']['attributes']['color'] ?? null,
+                    'size' => $item['additional']['attributes']['size'] ?? null,
+                    'weight' => $item['additional']['attributes']['weight'] ?? null,
+                    'height' => $item['additional']['attributes']['height'] ?? null,
+                    'width' => $item['additional']['attributes']['width'] ?? null,
+                    'depth' => $item['additional']['attributes']['depth'] ?? null,
                 ],
-                'descriptors' => $item['descriptors'] ?? null,
-                'isService' => $item['isService'] ?? null,
+                'descriptors' => $item['additional']['descriptors'] ?? null,
+                'isService' => $item['additional']['isService'] ?? null,
             ];
         }
     }
@@ -88,7 +87,7 @@ class CreateOrder extends Base
 
         $transaction = [
             'processor' => $this->data['transaction']['processor'] ?? null,
-            'processorMerchantId' => $this->data['transaction']['id'] ?? null,
+            'processorMerchantId' => $this->data['transaction']['processorId'] ?? null,
             'subtotal' => isset($subtotal['amount']) && $this->getCurrency() ? AmountHelper::parseAmount($subtotal['amount'], $this->getCurrency(), $this->amountIsDecimal()) : null,
             'orderTotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['total'], $this->getCurrency(), $this->amountIsDecimal()) : null,
             'currency' => $this->getCurrency(),
@@ -105,7 +104,7 @@ class CreateOrder extends Base
 
             foreach ($this->data['payment']['amount']['taxes'] as $tax) {
                 $total += $tax['amount'] ?? 0;
-                if (isset($tax['kind']) && $tax['kind'] === 'outOfStateTotal') {
+                if (isset($tax['kind']) && $tax['kind'] === 'stateTax') {
                     $outOfStateTotal += $tax['amount'];
                 }
             }
@@ -131,37 +130,34 @@ class CreateOrder extends Base
             $transaction['items'] = $this->getResumeOfItems();
         }
 
+        $transaction['payment']['type'] = $this->data['instrument']['type'] ?? null;
+
         if (isset($this->data['instrument']['card'])) {
-            $transaction['payment']['type'] = PaymentTypes::CARD;
+            $transaction['payment']['type'] = $transaction['payment']['type'] ?: PaymentTypes::CARD;
             $transaction['payment']['bin'] = $this->data['instrument']['card']['bin'] ?? null;
             $transaction['payment']['last4'] = $this->data['instrument']['card']['last4'] ?? null;
             $transaction['payment']['cardBrand'] = $this->data['instrument']['card']['cardBrand'] ?? null;
         } elseif (isset($this->data['instrument']['token'])) {
-            $transaction['payment']['type'] = PaymentTypes::TOKEN;
+            $transaction['payment']['type'] = $transaction['payment']['type'] ?: PaymentTypes::TOKEN;
             $transaction['payment']['paymentToken'] = $this->data['instrument']['token']['token'] ?? null;
         } else {
-            $transaction['payment']['type'] = PaymentTypes::NONE;
+            $transaction['payment']['type'] = $transaction['payment']['type'] ?: PaymentTypes::NONE;
         }
 
         $transaction['transactionStatus'] = $this->data['transaction']['status'] ?? null;
 
         $transaction['authorizationStatus'] = [
             'authResult' => $this->data['transaction']['authResult'] ?? null,
-            'dateTime' => $this->data['transaction']['updatedAt'] ?? null,
+            'dateTime' => $this->data['transaction']['date'] ?? null,
             'declineCode' => $this->data['transaction']['declineCode'],
-            'processorAuthCode' => $this->data['transaction']['processorAuthCode'],
-            'processorTransactionId' => $this->data['transaction']['processorTransactionId'],
-            'acquirerReferenceNumber' => $this->data['transaction']['acquirerReferenceNumber'],
+            'processorAuthCode' => $this->data['transaction']['authorization'],
+            'processorTransactionId' => $this->data['transaction']['processorId'],
+            'acquirerReferenceNumber' => $this->data['transaction']['receipt'],
         ];
 
         if (isset($this->data['transaction']['verification'])) {
-            if (isset($this->data['transaction']['verification']['cvvStatus'])) {
-                $transaction['authorizationStatus']['verificationResponse']['cvvStatus'] = $this->data['transaction']['verification']['cvvStatus'];
-            }
-
-            if (isset($this->data['transaction']['verification']['avsStatus'])) {
-                $transaction['authorizationStatus']['verificationResponse']['avsStatus'] = $this->data['transaction']['verification']['avsStatus'];
-            }
+            $transaction['authorizationStatus']['verificationResponse']['cvvStatus'] = $this->data['transaction']['verification']['cvvStatus'] ?? null;
+            $transaction['authorizationStatus']['verificationResponse']['avsStatus'] = $this->data['transaction']['verification']['avsStatus'] ?? null;
         }
 
         $this->requestData['transactions'][] = $transaction;
@@ -265,8 +261,8 @@ class CreateOrder extends Base
             'status' => $this->data['shipping']['status'] ?? null,
             'accessUrl' => $this->data['shipping']['accessUrl'] ?? null,
             'downloadDeviceIp' => $this->data['shipping']['downloadDeviceIp'] ?? null,
-            'merchantFulfillmentId' => $this->data['shipping']['merchantFulfillmentId'] ?? null,
-            'recipientPerson' => $this->getPerson('shipping.person'),
+            'merchantFulfillmentId' => $this->data['payment']['reference'] ?? null,
+            'recipientPerson' => $this->getPerson('payment.shipping'),
         ];
 
         $shipping = array_values(array_filter($this->data['payment']['amount']['details'], function ($value) {
@@ -372,6 +368,8 @@ class CreateOrder extends Base
         if (!isset($this->data['merchant'])) {
             return;
         }
+
+        $this->requestData['merchantCategoryCode'] = $this->data['merchant']['merchantCategoryCode'] ?? null;
 
         $this->requestData['merchant'] = [
             'name' => $this->data['merchant']['name'] ?? null,
