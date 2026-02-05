@@ -37,7 +37,7 @@ class ChargebackOrder extends Base
                     AmountHelper::parseAmount(
                         $this->data['refund']['amount']['total'],
                         $this->data['refund']['amount']['currency'],
-                        $this->data['refund']['amount']['isDecimal'] ?? true
+                        $this->data['refund']['amount']['inMinorUnit'] ?? true
                     ) : null,
                 'currency' => $this->data['refund']['amount']['currency'] ?? null,
                 'gatewayReceipt' => $this->data['refund']['receipt'] ?? null,

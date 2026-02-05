@@ -4,9 +4,9 @@ namespace PlacetoPay\Kount\Helpers;
 
 class AmountHelper
 {
-    public static function parseAmount($total, string $currency = 'COP', bool $isDecimal = true): int
+    public static function parseAmount($total, string $currency = 'COP', bool $isMinorUnit = false): int
     {
-        if (!$isDecimal) {
+        if ($isMinorUnit) {
             return (int)$total;
         }
 

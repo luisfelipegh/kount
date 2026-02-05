@@ -58,10 +58,10 @@ $request = [
     'payment' => [
         'reference' => 'TESTING_REFERENCE',
         'amount' => [
-            'subtotal' => 100,
-            'total' => 120,
+            'subtotal' => 10000, // if amountInMinorUnit is true, this means 100.00
+            'total' => 12000, // if amountInMinorUnit is true, this means 100.00
             'currency' => 'USD',
-            'isDecimal' => true,
+            'inMinorUnit' => true, // if true, amounts are in minor units (cents)
             'taxCountry' => 'US',
             'taxes' => [
                 [
@@ -149,7 +149,7 @@ $request = [
     'transaction' => [
         'processor' => 'VISA',
         'status' => TransactionStatuses::PENDING,
-        'authResult' => 'APPROVED',
+        'authResult' => 'UNKNOWN', // APPROVED, DECLINED, ERROR, UNKNOWN
         'date' => '2024-06-01T12:05:00.000Z',
         'verification' => ['cvvStatus' => '', 'avsStatus' => '2'],
         'declineCode' => '00',
@@ -330,7 +330,7 @@ try {
             'amount' => [
                 'total' => 12.000,
                 'currency' => 'USD',
-                'isDecimal' => true,
+                'inMinorUnit' => false,
             ],
             'gatewayReceipt' => 'receiptOfApprovedRefund123',
         ],

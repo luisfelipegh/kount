@@ -109,7 +109,7 @@ class ChargebackOrderTest extends BaseTestCase
                 'amount' => [
                         'total' => 1234,
                         'currency' => 'USD',
-                        'isDecimal' => true,
+                        'inMinorUnit' => false,
                     ],
                 'receipt' => 'testing_refund_Receipt',
             ],
@@ -163,7 +163,7 @@ class ChargebackOrderTest extends BaseTestCase
                 'amount' => [
                     'total' => 1234,
                     'currency' => 'USD',
-                    'isDecimal' => false,
+                    'inMinorUnit' => true,
                 ],
                 'receipt' => 'testing_refund_Receipt',
             ],

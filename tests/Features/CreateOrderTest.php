@@ -74,7 +74,7 @@ class CreateOrderTest extends BaseTestCase
                         'subtotal' => 100,
                         'total' => 120,
                         'currency' => 'USD',
-                        'isDecimal' => true,
+                        'inMinorUnit' => false,
                         'taxCountry' => 'US',
                         'taxes' => [
                             [

@@ -54,7 +54,7 @@ class CreateOrder extends Base
         foreach ($this->data['payment']['items'] ?? [] as $item) {
             $this->requestData['items'][] = [
                 'id' => $item['id'] ?? null,
-                'price' => isset($item['price']) && $this->getCurrency() ? AmountHelper::parseAmount($item['price'], $this->getCurrency(), $this->amountIsDecimal()) : null,
+                'price' => isset($item['price']) && $this->getCurrency() ? AmountHelper::parseAmount($item['price'], $this->getCurrency(), $this->amountInMinorUnit()) : null,
                 'description' => $item['description'] ?? null,
                 'quantity' => $item['qty'] ?? null,
                 'sku' => $item['sku'] ?? null,
@@ -88,8 +88,8 @@ class CreateOrder extends Base
         $transaction = [
             'processor' => $this->data['transaction']['processor'] ?? null,
             'processorMerchantId' => $this->data['transaction']['processorId'] ?? null,
-            'subtotal' => isset($subtotal['amount']) && $this->getCurrency() ? AmountHelper::parseAmount($subtotal['amount'], $this->getCurrency(), $this->amountIsDecimal()) : null,
-            'orderTotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['total'], $this->getCurrency(), $this->amountIsDecimal()) : null,
+            'subtotal' => isset($subtotal['amount']) && $this->getCurrency() ? AmountHelper::parseAmount($subtotal['amount'], $this->getCurrency(), $this->amountInMinorUnit()) : null,
+            'orderTotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['total'], $this->getCurrency(), $this->amountInMinorUnit()) : null,
             'currency' => $this->getCurrency(),
             'merchantTransactionId' => $this->data['payment']['reference'] ?? null,
         ];
@@ -110,7 +110,7 @@ class CreateOrder extends Base
             }
 
             if ($total) {
-                $transaction['tax']['taxAmount'] = AmountHelper::parseAmount($total, $this->getCurrency(), $this->amountIsDecimal());
+                $transaction['tax']['taxAmount'] = AmountHelper::parseAmount($total, $this->getCurrency(), $this->amountInMinorUnit());
             }
 
             if (isset($this->data['payment']['amount']['taxCountry'])) {
@@ -118,7 +118,7 @@ class CreateOrder extends Base
             }
 
             if ($outOfStateTotal) {
-                $transaction['tax']['outOfStateTotal'] = AmountHelper::parseAmount($outOfStateTotal, $this->getCurrency(), $this->amountIsDecimal());
+                $transaction['tax']['outOfStateTotal'] = AmountHelper::parseAmount($outOfStateTotal, $this->getCurrency(), $this->amountInMinorUnit());
             }
         }
 
@@ -209,7 +209,7 @@ class CreateOrder extends Base
 
                 $newPromotion['discount'] = [
                     'percentage' => $promotion['discount']['percentage'] ?? null,
-                    'amount' => isset($promotion['discount']['amount']) && $discountCurrency ? AmountHelper::parseAmount($promotion['discount']['amount'], $discountCurrency, $this->amountIsDecimal()) : null,
+                    'amount' => isset($promotion['discount']['amount']) && $discountCurrency ? AmountHelper::parseAmount($promotion['discount']['amount'], $discountCurrency, $this->amountInMinorUnit()) : null,
                     'currency' => $discountCurrency,
                 ];
             }
@@ -219,7 +219,7 @@ class CreateOrder extends Base
 
                 $newPromotion['credit'] = [
                     'creditType' => $promotion['credit']['creditType'] ?? null,
-                    'amount' => isset($promotion['credit']['amount']) && $creditCurrency ? AmountHelper::parseAmount($promotion['credit']['amount'], $creditCurrency, $this->amountIsDecimal()) : null,
+                    'amount' => isset($promotion['credit']['amount']) && $creditCurrency ? AmountHelper::parseAmount($promotion['credit']['amount'], $creditCurrency, $this->amountInMinorUnit()) : null,
                     'currency' => $creditCurrency,
                 ];
             }
@@ -243,15 +243,15 @@ class CreateOrder extends Base
             'description' => $this->data['loyalty']['description'] ?? null,
             'credit' => [
                 'creditType' => $this->data['loyalty']['credit']['creditType'] ?? null,
-                'amount' => AmountHelper::parseAmount($this->data['loyalty']['credit']['amount'], $currency, $this->amountIsDecimal()),
+                'amount' => AmountHelper::parseAmount($this->data['loyalty']['credit']['amount'], $currency, $this->amountInMinorUnit()),
                 'currency' => $currency,
             ],
         ];
     }
 
-    protected function amountIsDecimal(): bool
+    protected function amountInMinorUnit(): bool
     {
-        return $this->data['payment']['amount']['isDecimal'] ?? true;
+        return $this->data['payment']['amount']['inMinorUnit'] ?? false;
     }
 
     private function setShippingInformation(): void
@@ -271,7 +271,7 @@ class CreateOrder extends Base
 
         $fulfillment['shipping']['amount'] =
             isset($shipping['amount']) && $this->getCurrency() ?
-                AmountHelper::parseAmount($shipping['amount'], $this->getCurrency(), $this->amountIsDecimal())
+                AmountHelper::parseAmount($shipping['amount'], $this->getCurrency(), $this->amountInMinorUnit())
                 : null;
 
         $fulfillment['shipping']['provider'] = $this->data['shipping']['provider'] ?? null;

@@ -28,7 +28,7 @@ trait HasOrderStructure
                 'amount' => [
                     'total' => 12000,
                     'currency' => 'USD',
-                    'isDecimal' => true,
+                    'inMinorUnit' => false,
                     'taxCountry' => 'US',
                     'taxes' => [
                         [
