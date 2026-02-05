@@ -81,7 +81,7 @@ class CreateOrder extends Base
 
     private function setTransactionInformation(): void
     {
-        $subtotal = array_values(array_filter($this->data['payment']['amount']['details'], function ($value) {
+        $subtotal = array_values(array_filter($this->data['payment']['amount']['details'] ?? [], function ($value) {
             return isset($value['kind']) && $value['kind'] === 'subtotal';
         }))[0] ?? [];
 
@@ -149,10 +149,10 @@ class CreateOrder extends Base
         $transaction['authorizationStatus'] = [
             'authResult' => $this->data['transaction']['authResult'] ?? null,
             'dateTime' => $this->data['transaction']['date'] ?? null,
-            'declineCode' => $this->data['transaction']['declineCode'],
-            'processorAuthCode' => $this->data['transaction']['authorization'],
-            'processorTransactionId' => $this->data['transaction']['processorId'],
-            'acquirerReferenceNumber' => $this->data['transaction']['receipt'],
+            'declineCode' => $this->data['transaction']['declineCode'] ?? null,
+            'processorAuthCode' => $this->data['transaction']['authorization'] ?? null,
+            'processorTransactionId' => $this->data['transaction']['processorId'] ?? null,
+            'acquirerReferenceNumber' => $this->data['transaction']['receipt'] ?? null,
         ];
 
         if (isset($this->data['transaction']['verification'])) {
