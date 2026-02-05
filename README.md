@@ -61,26 +61,26 @@ $request = [
             'subtotal' => 10000, // if amountInMinorUnit is true, this means 100.00
             'total' => 12000, // if amountInMinorUnit is true, this means 100.00
             'currency' => 'USD',
-            'inMinorUnit' => true, // if true, amounts are in minor units (cents)
+            'inMinorUnit' => true, // if true, ALL amounts must be sent in minor units (cents)
             'taxCountry' => 'US',
             'taxes' => [
                 [
                     'kind' => 'iva',
-                    'amount' => 15,
+                    'amount' => 1500,
                 ],
                 [
-                    'kind' => 'stateTax',
-                    'amount' => 5,
+                    'kind' => 'stateTax',  // so means outOfStateTotal in payments fraud
+                    'amount' => 500,
                 ],
             ],
             'details' => [
                 [
                     'kind' => 'subtotal',
-                    'amount' => 100,
+                    'amount' => 10000,
                 ],
                 [
                     'kind' => 'shipping',
-                    'amount' => 1500,
+                    'amount' => 150000,
                 ],
             ],
         ],
@@ -91,7 +91,7 @@ $request = [
                 'name' => 'Product 1',
                 'qty' => 1,
                 'sku' => 'SKU1',
-                'price' => 70,
+                'price' => 7000,
                 'category' => 'digital',
                 'additional' => [
                     'isDigital' => true,
@@ -117,7 +117,7 @@ $request = [
                 'desc' => 'Product 2',
                 'qty' => 3,
                 'sku' => 'SKU2',
-                'price' => 30,
+                'price' => 3000,
             ],
         ],
         'shipping' => [
