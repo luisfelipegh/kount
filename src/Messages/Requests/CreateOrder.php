@@ -265,9 +265,14 @@ class CreateOrder extends Base
             'recipientPerson' => $this->getPerson('payment.shipping'),
         ];
 
-        $shipping = array_values(array_filter($this->data['payment']['amount']['details'], function ($value) {
-            return isset($value['kind']) && $value['kind'] === 'shipping';
-        }))[0] ?? [];
+        $shipping = array_values(
+            array_filter(
+                ArrayHelper::get($this->data, 'payment.amount.details', []),
+                function ($value) {
+                    return isset($value['kind']) && $value['kind'] === 'shipping';
+                }
+            )
+        )[0] ?? [];
 
         $fulfillment['shipping']['amount'] =
             isset($shipping['amount']) && $this->getCurrency() ?
