@@ -161,7 +161,7 @@ class CreateOrder extends Base
 
     protected function getPerson(string $type): array
     {
-        $array = ArrayHelper::get($this->data, $type);
+        $array = ArrayHelper::get($this->data, $type, []);
 
         return [
             'name' => [
