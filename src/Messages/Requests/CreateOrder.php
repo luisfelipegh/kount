@@ -11,10 +11,10 @@ class CreateOrder extends Base
     public function body(): array
     {
         $this->requestData = [
-            'merchantOrderId' => $this->data['payment']['reference'] ?? null,
+            'merchantOrderId' => ArrayHelper::get($this->data, 'payment.reference'),
             'channel' => $this->channel,
-            'deviceSessionId' => $this->data['instrument']['kount']['session'] ?? null,
-            'creationDateTime' => $this->data['date'] ?? null,
+            'deviceSessionId' => ArrayHelper::get($this->data, 'instrument.kount.session'),
+            'creationDateTime' => ArrayHelper::get($this->data, 'date'),
             'items' => [],
         ];
 
@@ -40,10 +40,10 @@ class CreateOrder extends Base
     {
         if (isset($this->data['account'])) {
             $this->requestData['account'] = [
-                'id' => $this->data['account']['id'] ?? null,
-                'type' => $this->data['account']['type'] ?? null,
-                'creationDateTime' => $this->data['account']['creationDateTime'] ?? null,
-                'username' => $this->data['account']['username'] ?? null,
+                'id' => ArrayHelper::get($this->data, 'account.id'),
+                'type' => ArrayHelper::get($this->data, 'account.type'),
+                'creationDateTime' => ArrayHelper::get($this->data, 'account.creationDateTime'),
+                'username' => ArrayHelper::get($this->data, 'account.username'),
                 'accountIsActive' => isset($this->data['account']['accountIsActive']) ? filter_var($this->data['account']['accountIsActive'], FILTER_VALIDATE_BOOLEAN) : null,
             ];
         }
@@ -51,58 +51,59 @@ class CreateOrder extends Base
 
     private function setItemsInformation(): void
     {
-        foreach ($this->data['payment']['items'] ?? [] as $item) {
+        foreach (ArrayHelper::get($this->data, 'payment.items', []) as $item) {
             $this->requestData['items'][] = [
-                'id' => $item['id'] ?? null,
+                'id' => ArrayHelper::get($item, 'id'),
                 'price' => isset($item['price']) && $this->getCurrency() ? AmountHelper::parseAmount($item['price'], $this->getCurrency(), $this->amountInMinorUnit()) : null,
-                'description' => $item['description'] ?? null,
-                'quantity' => $item['qty'] ?? null,
-                'sku' => $item['sku'] ?? null,
-                'category' => $item['category'] ?? null,
-                'isDigital' => isset($item['additional']['category']) ? $item['additional']['category'] == 'digital' : ($item['additional']['isDigital'] ?? null),
-                'subCategory' => $item['additional']['subCategory'] ?? null,
-                'upc' => $item['additional']['upc'] ?? null,
-                'brand' => $item['additional']['brand'] ?? null,
-                'url' => $item['additional']['url'] ?? null,
-                'imageUrl' => $item['additional']['imageUrl'] ?? null,
+                'description' => ArrayHelper::get($item, 'description'),
+                'quantity' => ArrayHelper::get($item, 'qty'),
+                'sku' => ArrayHelper::get($item, 'sku'),
+                'category' => ArrayHelper::get($item, 'category'),
+                'isDigital' => isset($item['additional']['category']) ? $item['additional']['category'] == 'digital' : ArrayHelper::get($item, 'additional.isDigital'),
+                'subCategory' => ArrayHelper::get($item, 'additional.subCategory'),
+                'upc' => ArrayHelper::get($item, 'additional.upc'),
+                'brand' => ArrayHelper::get($item, 'additional.brand'),
+                'url' => ArrayHelper::get($item, 'additional.url'),
+                'imageUrl' => ArrayHelper::get($item, 'additional.imageUrl'),
                 'physicalAttributes' => [
-                    'color' => $item['additional']['attributes']['color'] ?? null,
-                    'size' => $item['additional']['attributes']['size'] ?? null,
-                    'weight' => $item['additional']['attributes']['weight'] ?? null,
-                    'height' => $item['additional']['attributes']['height'] ?? null,
-                    'width' => $item['additional']['attributes']['width'] ?? null,
-                    'depth' => $item['additional']['attributes']['depth'] ?? null,
+                    'color' => ArrayHelper::get($item, 'additional.attributes.color'),
+                    'size' => ArrayHelper::get($item, 'additional.attributes.size'),
+                    'weight' => ArrayHelper::get($item, 'additional.attributes.weight'),
+                    'height' => ArrayHelper::get($item, 'additional.attributes.height'),
+                    'width' => ArrayHelper::get($item, 'additional.attributes.width'),
+                    'depth' => ArrayHelper::get($item, 'additional.attributes.depth'),
                 ],
-                'descriptors' => $item['additional']['descriptors'] ?? null,
-                'isService' => $item['additional']['isService'] ?? null,
+                'descriptors' => ArrayHelper::get($item, 'additional.descriptors'),
+                'isService' => ArrayHelper::get($item, 'additional.isService'),
             ];
         }
     }
 
     private function setTransactionInformation(): void
     {
-        $subtotal = array_values(array_filter($this->data['payment']['amount']['details'] ?? [], function ($value) {
+        $subtotal = array_values(array_filter(ArrayHelper::get($this->data, 'payment.amount.details', []), function ($value) {
             return isset($value['kind']) && $value['kind'] === 'subtotal';
         }))[0] ?? [];
 
         $transaction = [
-            'processor' => $this->data['transaction']['processor'] ?? null,
-            'processorMerchantId' => $this->data['transaction']['processorId'] ?? null,
+            'processor' => ArrayHelper::get($this->data, 'transaction.processor'),
+            'processorMerchantId' => ArrayHelper::get($this->data, 'transaction.processorId'),
             'subtotal' => isset($subtotal['amount']) && $this->getCurrency() ? AmountHelper::parseAmount($subtotal['amount'], $this->getCurrency(), $this->amountInMinorUnit()) : null,
             'orderTotal' => isset($this->data['payment']['amount']['total']) && $this->getCurrency() ? AmountHelper::parseAmount($this->data['payment']['amount']['total'], $this->getCurrency(), $this->amountInMinorUnit()) : null,
             'currency' => $this->getCurrency(),
-            'merchantTransactionId' => $this->data['payment']['reference'] ?? null,
+            'merchantTransactionId' => ArrayHelper::get($this->data, 'payment.reference'),
         ];
 
         if (isset($this->data['payment']['amount']['taxes'])) {
             $transaction['tax'] = [
                 'isTaxable' => true,
+                'taxableCountryCode' => ArrayHelper::get($this->data, 'payment.amount.taxCountry'),
             ];
 
             $total = 0;
             $outOfStateTotal = 0;
 
-            foreach ($this->data['payment']['amount']['taxes'] as $tax) {
+            foreach (ArrayHelper::get($this->data, 'payment.amount.taxes') as $tax) {
                 $total += $tax['amount'] ?? 0;
                 if (isset($tax['kind']) && $tax['kind'] === 'stateTax') {
                     $outOfStateTotal += $tax['amount'];
@@ -111,10 +112,6 @@ class CreateOrder extends Base
 
             if ($total) {
                 $transaction['tax']['taxAmount'] = AmountHelper::parseAmount($total, $this->getCurrency(), $this->amountInMinorUnit());
-            }
-
-            if (isset($this->data['payment']['amount']['taxCountry'])) {
-                $transaction['tax']['taxableCountryCode'] = $this->data['payment']['amount']['taxCountry'];
             }
 
             if ($outOfStateTotal) {
@@ -130,35 +127,34 @@ class CreateOrder extends Base
             $transaction['items'] = $this->getResumeOfItems();
         }
 
-        $transaction['payment']['type'] = $this->data['instrument']['type'] ?? null;
+        $transaction['payment']['type'] = ArrayHelper::get($this->data, 'instrument.type');
 
         if (isset($this->data['instrument']['card'])) {
-            $transaction['payment']['type'] = $transaction['payment']['type'] ?: PaymentTypes::CARD;
-            $transaction['payment']['bin'] = $this->data['instrument']['card']['bin'] ?? null;
-            $transaction['payment']['last4'] = $this->data['instrument']['card']['last4'] ?? null;
-            $transaction['payment']['cardBrand'] = $this->data['instrument']['card']['cardBrand'] ?? null;
+            $transaction['payment']['type'] = ArrayHelper::get($transaction, 'payment.type') ?? PaymentTypes::CARD;
+            $transaction['payment']['bin'] = ArrayHelper::get($this->data, 'instrument.card.bin');
+            $transaction['payment']['last4'] = ArrayHelper::get($this->data, 'instrument.card.last4');
+            $transaction['payment']['cardBrand'] = ArrayHelper::get($this->data, 'instrument.card.cardBrand');
         } elseif (isset($this->data['instrument']['token'])) {
-            $transaction['payment']['type'] = $transaction['payment']['type'] ?: PaymentTypes::TOKEN;
-            $transaction['payment']['paymentToken'] = $this->data['instrument']['token']['token'] ?? null;
+            $transaction['payment']['type'] = ArrayHelper::get($transaction, 'payment.type') ?? PaymentTypes::TOKEN;
+            $transaction['payment']['paymentToken'] = ArrayHelper::get($this->data, 'instrument.token.token');
         } else {
-            $transaction['payment']['type'] = $transaction['payment']['type'] ?: PaymentTypes::NONE;
+            $transaction['payment']['type'] = ArrayHelper::get($transaction, 'payment.type') ?? PaymentTypes::NONE;
         }
 
-        $transaction['transactionStatus'] = $this->data['transaction']['status'] ?? null;
+        $transaction['transactionStatus'] = ArrayHelper::get($this->data, 'transaction.status');
 
         $transaction['authorizationStatus'] = [
-            'authResult' => $this->data['transaction']['authResult'] ?? null,
-            'dateTime' => $this->data['transaction']['date'] ?? null,
-            'declineCode' => $this->data['transaction']['declineCode'] ?? null,
-            'processorAuthCode' => $this->data['transaction']['authorization'] ?? null,
-            'processorTransactionId' => $this->data['transaction']['processorId'] ?? null,
-            'acquirerReferenceNumber' => $this->data['transaction']['receipt'] ?? null,
+            'authResult' => ArrayHelper::get($this->data, 'transaction.authResult'),
+            'dateTime' => ArrayHelper::get($this->data, 'transaction.date'),
+            'declineCode' => ArrayHelper::get($this->data, 'transaction.declineCode'),
+            'processorAuthCode' => ArrayHelper::get($this->data, 'transaction.authorization'),
+            'processorTransactionId' => ArrayHelper::get($this->data, 'transaction.processorId'),
+            'acquirerReferenceNumber' => ArrayHelper::get($this->data, 'transaction.receipt'),
+            'verificationResponse' => [
+                'cvvStatus' => ArrayHelper::get($this->data, 'transaction.verification.cvvStatus'),
+                'avsStatus' => ArrayHelper::get($this->data, 'transaction.verification.avsStatus'),
+            ],
         ];
-
-        if (isset($this->data['transaction']['verification'])) {
-            $transaction['authorizationStatus']['verificationResponse']['cvvStatus'] = $this->data['transaction']['verification']['cvvStatus'] ?? null;
-            $transaction['authorizationStatus']['verificationResponse']['avsStatus'] = $this->data['transaction']['verification']['avsStatus'] ?? null;
-        }
 
         $this->requestData['transactions'][] = $transaction;
     }
@@ -169,23 +165,23 @@ class CreateOrder extends Base
 
         return [
             'name' => [
-                'first' => $array['name'] ?? null,
-                'family' => $array['surname'] ?? null,
-                'preferred' => $array['preferred'] ?? null,
-                'middle' => $array['middle'] ?? null,
-                'prefix' => $array['prefix'] ?? null,
-                'suffix' => $array['suffix'] ?? null,
+                'first' => ArrayHelper::get($array, 'name'),
+                'family' => ArrayHelper::get($array, 'surname'),
+                'preferred' => ArrayHelper::get($array, 'preferred'),
+                'middle' => ArrayHelper::get($array, 'middle'),
+                'prefix' => ArrayHelper::get($array, 'prefix'),
+                'suffix' => ArrayHelper::get($array, 'suffix'),
             ],
-            'emailAddress' => $array['email'] ?? null,
-            'phoneNumber' => $array['mobile'] ?? null,
-            'dateOfBirth' => $array['dateOfBirth'] ?? null,
+            'emailAddress' => ArrayHelper::get($array, 'email'),
+            'phoneNumber' => ArrayHelper::get($array, 'mobile'),
+            'dateOfBirth' => ArrayHelper::get($array, 'dateOfBirth'),
             'address' => [
-                'line1' => $array['address']['street'] ?? null,
-                'line2' => $array['address']['street2'] ?? null,
-                'city' => $array['address']['city'] ?? null,
-                'region' => $array['address']['state'] ?? null,
-                'countryCode' => $array['address']['country'] ?? null,
-                'postalCode' => $array['address']['postalCode'] ?? null,
+                'line1' => ArrayHelper::get($array, 'address.street'),
+                'line2' => ArrayHelper::get($array, 'address.street2'),
+                'city' => ArrayHelper::get($array, 'address.city'),
+                'region' => ArrayHelper::get($array, 'address.state'),
+                'countryCode' => ArrayHelper::get($array, 'address.country'),
+                'postalCode' => ArrayHelper::get($array, 'address.postalCode'),
             ],
         ];
     }
@@ -199,16 +195,16 @@ class CreateOrder extends Base
 
         foreach ($this->data['promotions'] as $promotion) {
             $newPromotion = [];
-            $newPromotion['id'] = $promotion['id'] ?? null;
-            $newPromotion['description'] = $promotion['description'] ?? null;
-            $newPromotion['status'] = $promotion['status'] ?? null;
-            $newPromotion['statusReason'] = $promotion['statusReason'] ?? null;
+            $newPromotion['id'] = ArrayHelper::get($promotion, 'id');
+            $newPromotion['description'] = ArrayHelper::get($promotion, 'description');
+            $newPromotion['status'] = ArrayHelper::get($promotion, 'status');
+            $newPromotion['statusReason'] = ArrayHelper::get($promotion, 'statusReason');
 
             if (isset($promotion['discount'])) {
                 $discountCurrency = $promotion['discount']['currency'] ?? $this->getCurrency() ?? null;
 
                 $newPromotion['discount'] = [
-                    'percentage' => $promotion['discount']['percentage'] ?? null,
+                    'percentage' => ArrayHelper::get($promotion, 'discount.percentage'),
                     'amount' => isset($promotion['discount']['amount']) && $discountCurrency ? AmountHelper::parseAmount($promotion['discount']['amount'], $discountCurrency, $this->amountInMinorUnit()) : null,
                     'currency' => $discountCurrency,
                 ];
@@ -218,7 +214,7 @@ class CreateOrder extends Base
                 $creditCurrency = $promotion['credit']['currency'] ?? $this->getCurrency() ?? null;
 
                 $newPromotion['credit'] = [
-                    'creditType' => $promotion['credit']['creditType'] ?? null,
+                    'creditType' => ArrayHelper::get($promotion, 'credit.creditType'),
                     'amount' => isset($promotion['credit']['amount']) && $creditCurrency ? AmountHelper::parseAmount($promotion['credit']['amount'], $creditCurrency, $this->amountInMinorUnit()) : null,
                     'currency' => $creditCurrency,
                 ];
@@ -239,10 +235,10 @@ class CreateOrder extends Base
         $currency = $this->data['loyalty']['credit']['currency'] ?? $this->getCurrency() ?? '';
 
         $this->requestData['loyalty'] = [
-            'id' => $this->data['loyalty']['id'] ?? null,
-            'description' => $this->data['loyalty']['description'] ?? null,
+            'id' => ArrayHelper::get($this->data, 'loyalty.id'),
+            'description' => ArrayHelper::get($this->data, 'loyalty.description'),
             'credit' => [
-                'creditType' => $this->data['loyalty']['credit']['creditType'] ?? null,
+                'creditType' => ArrayHelper::get($this->data, 'loyalty.credit.creditType'),
                 'amount' => AmountHelper::parseAmount($this->data['loyalty']['credit']['amount'], $currency, $this->amountInMinorUnit()),
                 'currency' => $currency,
             ],
@@ -251,18 +247,23 @@ class CreateOrder extends Base
 
     protected function amountInMinorUnit(): bool
     {
-        return $this->data['payment']['amount']['inMinorUnit'] ?? false;
+        return ArrayHelper::get($this->data, 'payment.amount.inMinorUnit', false);
     }
 
     private function setShippingInformation(): void
     {
         $fulfillment = [
-            'type' => $this->data['shipping']['type'] ?? '',
-            'status' => $this->data['shipping']['status'] ?? null,
-            'accessUrl' => $this->data['shipping']['accessUrl'] ?? null,
-            'downloadDeviceIp' => $this->data['shipping']['downloadDeviceIp'] ?? null,
-            'merchantFulfillmentId' => $this->data['payment']['reference'] ?? null,
+            'type' => ArrayHelper::get($this->data, 'shipping.type', ''),
+            'status' => ArrayHelper::get($this->data, 'shipping.status'),
+            'accessUrl' => ArrayHelper::get($this->data, 'shipping.accessUrl'),
+            'downloadDeviceIp' => ArrayHelper::get($this->data, 'shipping.downloadDeviceIp'),
+            'merchantFulfillmentId' => ArrayHelper::get($this->data, 'payment.reference'),
             'recipientPerson' => $this->getPerson('payment.shipping'),
+            'shipping' => [
+                'provider' => ArrayHelper::get($this->data, 'shipping.provider'),
+                'trackingNumber' => ArrayHelper::get($this->data, 'shipping.trackingNumber'),
+                'method' => ArrayHelper::get($this->data, 'shipping.method'),
+            ],
         ];
 
         $shipping = array_values(
@@ -279,10 +280,6 @@ class CreateOrder extends Base
                 AmountHelper::parseAmount($shipping['amount'], $this->getCurrency(), $this->amountInMinorUnit())
                 : null;
 
-        $fulfillment['shipping']['provider'] = $this->data['shipping']['provider'] ?? null;
-        $fulfillment['shipping']['trackingNumber'] = $this->data['shipping']['trackingNumber'] ?? null;
-        $fulfillment['shipping']['method'] = $this->data['shipping']['method'] ?? null;
-
         if ($this->requestData['items']) {
             $fulfillment['items'] = $this->getResumeOfItems();
         }
@@ -293,18 +290,18 @@ class CreateOrder extends Base
 
         if (isset($this->data['store'])) {
             $fulfillment['store'] = [
-                'id' => $this->data['store']['id'] ?? null,
-                'name' => $this->data['store']['name'] ?? null,
+                'id' => ArrayHelper::get($this->data, 'store.id'),
+                'name' => ArrayHelper::get($this->data, 'store.name'),
             ];
 
             if (isset($this->data['store']['address'])) {
                 $fulfillment['store']['address'] = [
-                    'line1' => $this->data['store']['address']['street'] ?? null,
-                    'line2' => $this->data['store']['address']['street2'] ?? null,
-                    'city' => $this->data['store']['address']['city'] ?? null,
-                    'region' => $this->data['store']['address']['state'] ?? null,
-                    'countryCode' => $this->data['store']['address']['country'] ?? null,
-                    'postalCode' => $this->data['store']['address']['postalCode'] ?? null,
+                    'line1' => ArrayHelper::get($this->data, 'store.address.street'),
+                    'line2' => ArrayHelper::get($this->data, 'store.address.street2'),
+                    'city' => ArrayHelper::get($this->data, 'store.address.city'),
+                    'region' => ArrayHelper::get($this->data, 'store.address.state'),
+                    'countryCode' => ArrayHelper::get($this->data, 'store.address.country'),
+                    'postalCode' => ArrayHelper::get($this->data, 'store.address.postalCode'),
                 ];
             }
         }
@@ -314,7 +311,7 @@ class CreateOrder extends Base
 
     protected function getCurrency(): ?string
     {
-        return $this->data['payment']['amount']['currency'] ?? null;
+        return ArrayHelper::get($this->data, 'payment.amount.currency');
     }
 
     protected function getResumeOfItems(): array
@@ -342,10 +339,10 @@ class CreateOrder extends Base
         }
 
         $this->requestData['links'] = [
-            'viewOrderUrl' => $this->data['links']['viewOrderUrl'] ?? null,
-            'requestRefundUrl' => $this->data['links']['requestRefundUrl'] ?? null,
-            'buyAgainUrl' => $this->data['links']['buyAgainUrl'] ?? null,
-            'writeReviewUrl' => $this->data['links']['writeReviewUrl'] ?? null,
+            'viewOrderUrl' => ArrayHelper::get($this->data, 'links.viewOrderUrl'),
+            'requestRefundUrl' => ArrayHelper::get($this->data, 'links.requestRefundUrl'),
+            'buyAgainUrl' => ArrayHelper::get($this->data, 'links.buyAgainUrl'),
+            'writeReviewUrl' => ArrayHelper::get($this->data, 'links.writeReviewUrl'),
         ];
     }
 
@@ -356,11 +353,11 @@ class CreateOrder extends Base
         }
 
         $this->requestData['advertising'] = [
-            'channel' => $this->data['advertising']['channel'] ?? null,
-            'affiliate' => $this->data['advertising']['affiliate'] ?? null,
-            'subAffiliate' => $this->data['advertising']['subAffiliate'] ?? null,
-            'writeReviewUrl' => $this->data['advertising']['writeReviewUrl'] ?? null,
-            'events' => $this->data['advertising']['events'] ?? [],
+            'channel' => ArrayHelper::get($this->data, 'advertising.channel'),
+            'affiliate' => ArrayHelper::get($this->data, 'advertising.affiliate'),
+            'subAffiliate' => ArrayHelper::get($this->data, 'advertising.subAffiliate'),
+            'writeReviewUrl' => ArrayHelper::get($this->data, 'advertising.writeReviewUrl'),
+            'events' => ArrayHelper::get($this->data, 'advertising.events', []),
             'campaign' => isset($this->data['advertising']['campaign']) ? [
                 'id' => $this->data['advertising']['campaign']['id'] ?? null,
                 'name' => $this->data['advertising']['campaign']['name'] ?? null,
@@ -374,15 +371,15 @@ class CreateOrder extends Base
             return;
         }
 
-        $this->requestData['merchantCategoryCode'] = $this->data['merchant']['merchantCategoryCode'] ?? null;
+        $this->requestData['merchantCategoryCode'] = ArrayHelper::get($this->data, 'merchant.merchantCategoryCode');
 
         $this->requestData['merchant'] = [
-            'name' => $this->data['merchant']['name'] ?? null,
-            'storeName' => $this->data['merchant']['storeName'] ?? null,
-            'websiteUrl' => $this->data['merchant']['websiteUrl'] ?? null,
-            'id' => $this->data['merchant']['id'] ?? null,
-            'contactEmail' => $this->data['merchant']['contactEmail'] ?? null,
-            'contactPhoneNumber' => $this->data['merchant']['contactPhoneNumber'] ?? null,
+            'name' => ArrayHelper::get($this->data, 'merchant.name'),
+            'storeName' => ArrayHelper::get($this->data, 'merchant.storeName'),
+            'websiteUrl' => ArrayHelper::get($this->data, 'merchant.websiteUrl'),
+            'id' => ArrayHelper::get($this->data, 'merchant.id'),
+            'contactEmail' => ArrayHelper::get($this->data, 'merchant.contactEmail'),
+            'contactPhoneNumber' => ArrayHelper::get($this->data, 'merchant.contactPhoneNumber'),
         ];
     }
 }
